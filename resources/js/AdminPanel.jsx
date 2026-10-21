@@ -78,7 +78,21 @@ function Dashboard({ stats = {} }) {
     );
 }
 
-function ReportList({ reports = [] }) {
+function ReportList({ reports = {}, categories = [], statuses = [], filters = {} }) {
+    const form = useForm({
+        search: filters.search ?? '',
+        status: filters.status ?? '',
+        category: filters.category ?? '',
+        period: filters.period ?? 'all',
+    });
+
+    function search(event) {
+        event.preventDefault();
+        form.get('/admin/reports', { preserveScroll: true, replace: true });
+    }
+
+    const reportItems = reports.data ?? [];
+
     return (
         <section>
             <div className="mb-5">
@@ -86,14 +100,35 @@ function ReportList({ reports = [] }) {
                 <h1 className="mt-2 text-3xl font-extrabold text-white">Laporan insiden</h1>
                 <p className="mt-2 text-sm text-slate-400">Data pelapor dan detail insiden hanya tersedia di area petugas.</p>
             </div>
+            <form className="mb-5 grid gap-3 rounded-2xl border border-slate-800 bg-[#111a2a] p-4 sm:grid-cols-2 xl:grid-cols-[minmax(16rem,1fr)_12rem_12rem_12rem_auto_auto] xl:items-end" onSubmit={search}>
+                <label className="block text-sm font-semibold text-slate-300">
+                    <span className={labelClass}>Cari laporan</span>
+                    <input className={inputClass} maxLength="100" onChange={(event) => form.setData('search', event.target.value)} placeholder="Subjek atau kategori..." value={form.data.search} />
+                </label>
+                <label className="block text-sm font-semibold text-slate-300">
+                    <span className={labelClass}>Status</span>
+                    <select className={inputClass} onChange={(event) => form.setData('status', event.target.value)} value={form.data.status}><option value="">Semua status</option>{statuses.map((status) => <option key={status} value={status}>{status}</option>)}</select>
+                </label>
+                <label className="block text-sm font-semibold text-slate-300">
+                    <span className={labelClass}>Kategori</span>
+                    <select className={inputClass} onChange={(event) => form.setData('category', event.target.value)} value={form.data.category}><option value="">Semua kategori</option>{categories.map((category) => <option key={category} value={category}>{category}</option>)}</select>
+                </label>
+                <label className="block text-sm font-semibold text-slate-300">
+                    <span className={labelClass}>Periode masuk</span>
+                    <select className={inputClass} onChange={(event) => form.setData('period', event.target.value)} value={form.data.period}><option value="all">Semua waktu</option><option value="7days">7 hari terakhir</option><option value="30days">30 hari terakhir</option></select>
+                </label>
+                <button className={buttonClass} disabled={form.processing} type="submit">Cari</button>
+                <Link className="inline-flex items-center justify-center rounded-lg border border-slate-700 px-4 py-2.5 text-sm font-semibold text-slate-300 hover:bg-slate-800" href="/admin/reports">Reset</Link>
+            </form>
             <div className="overflow-hidden rounded-2xl border border-slate-800 bg-[#111a2a]">
-                {reports.length ? reports.map((item) => (
+                {reportItems.length ? reportItems.map((item) => (
                     <Link className="flex flex-col gap-3 border-b border-slate-800 p-4 transition last:border-0 hover:bg-slate-800/40 sm:flex-row sm:items-center sm:justify-between" href={`/admin/reports/${item.id}`} key={item.id}>
                         <span><span className="block font-bold text-white">{item.subject}</span><span className="mt-1 block text-xs text-slate-400">{item.category} · {new Date(item.created_at).toLocaleString('id-ID')}</span></span>
                         <span className="w-fit rounded-full border border-sky-500/30 bg-sky-500/10 px-3 py-1 text-xs font-semibold capitalize text-sky-300">{item.status}</span>
                     </Link>
                 )) : <p className="p-6 text-sm text-slate-400">Tidak ada laporan yang dapat ditangani saat ini.</p>}
             </div>
+            {reports.links?.length > 3 && <nav aria-label="Navigasi halaman laporan" className="mt-5 flex flex-wrap justify-center gap-2">{reports.links.map((link, index) => <Link aria-current={link.active ? 'page' : undefined} className={`rounded-lg border px-3 py-2 text-sm ${link.active ? 'border-sky-500 bg-sky-600 text-white' : 'border-slate-800 bg-[#111a2a] text-slate-300'} ${!link.url ? 'pointer-events-none opacity-40' : ''}`} dangerouslySetInnerHTML={{ __html: link.label }} href={link.url || '#'} key={`${link.label}-${index}`} preserveScroll />)}</nav>}
         </section>
     );
 }
@@ -191,11 +226,22 @@ function ContentForm({ type, initial, onCancel, onSaved }) {
     );
 }
 
-function ContentManagement({ type, items = [] }) {
+function ContentManagement({ type, items = [], filters = {} }) {
     const [editing, setEditing] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const searchForm = useForm({
+        search: filters.search ?? '',
+        status: filters.status ?? '',
+        period: filters.period ?? 'all',
+        sort: filters.sort ?? 'newest',
+    });
     const title = type === 'berita' ? 'Berita' : 'Artikel';
     const singularTitle = type === 'berita' ? 'berita' : 'artikel';
+
+    function search(event) {
+        event.preventDefault();
+        searchForm.get(`/admin/content/${type}`, { preserveScroll: true, replace: true });
+    }
 
     function closeModal() {
         setIsModalOpen(false);
@@ -225,6 +271,26 @@ function ContentManagement({ type, items = [] }) {
                 <div><p className="text-xs font-bold uppercase tracking-[0.2em] text-sky-400">Publikasi</p><h1 className="mt-2 text-3xl font-extrabold text-white">Kelola {title}</h1><p className="mt-2 text-sm text-slate-400">Buat draft atau terbitkan konten ke halaman publik.</p></div>
                 <button className={buttonClass} onClick={() => { setEditing(null); setIsModalOpen(true); }} type="button">Tambah {singularTitle}</button>
             </div>
+            <form className="grid gap-3 rounded-2xl border border-slate-800 bg-[#111a2a] p-4 sm:grid-cols-2 xl:grid-cols-[minmax(16rem,1fr)_12rem_12rem_12rem_auto_auto] xl:items-end" onSubmit={search}>
+                <label className="block text-sm font-semibold text-slate-300">
+                    <span className={labelClass}>Cari {singularTitle}</span>
+                    <input className={inputClass} maxLength="100" onChange={(event) => searchForm.setData('search', event.target.value)} placeholder="Judul atau isi..." value={searchForm.data.search} />
+                </label>
+                <label className="block text-sm font-semibold text-slate-300">
+                    <span className={labelClass}>Status</span>
+                    <select className={inputClass} onChange={(event) => searchForm.setData('status', event.target.value)} value={searchForm.data.status}><option value="">Semua status</option><option value="draft">Draft</option><option value="published">Terbit</option></select>
+                </label>
+                <label className="block text-sm font-semibold text-slate-300">
+                    <span className={labelClass}>Periode dibuat</span>
+                    <select className={inputClass} onChange={(event) => searchForm.setData('period', event.target.value)} value={searchForm.data.period}><option value="all">Semua waktu</option><option value="30days">30 hari terakhir</option><option value="year">1 tahun terakhir</option></select>
+                </label>
+                <label className="block text-sm font-semibold text-slate-300">
+                    <span className={labelClass}>Urutan</span>
+                    <select className={inputClass} onChange={(event) => searchForm.setData('sort', event.target.value)} value={searchForm.data.sort}><option value="newest">Terbaru diubah</option><option value="oldest">Terlama diubah</option></select>
+                </label>
+                <button className={buttonClass} disabled={searchForm.processing} type="submit">Cari</button>
+                <Link className="inline-flex items-center justify-center rounded-lg border border-slate-700 px-4 py-2.5 text-sm font-semibold text-slate-300 hover:bg-slate-800" href={`/admin/content/${type}`}>Reset</Link>
+            </form>
             <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                 {items.data?.length ? items.data.map((item) => (
                     <article className="flex h-[28rem] min-w-0 flex-col overflow-hidden rounded-2xl border border-slate-800 bg-[#111a2a]" key={item.id}>
@@ -239,9 +305,9 @@ function ContentManagement({ type, items = [] }) {
                             </div>
                         </div>
                     </article>
-                )) : <p className="rounded-2xl border border-slate-800 bg-[#111a2a] p-5 text-sm text-slate-400 sm:col-span-2 xl:col-span-3">Belum ada {title.toLowerCase()}.</p>}
+                )) : <p className="rounded-2xl border border-slate-800 bg-[#111a2a] p-5 text-sm text-slate-400 sm:col-span-2 xl:col-span-3">Tidak ada {singularTitle} yang cocok dengan pencarian atau filter ini.</p>}
             </div>
-            {items.links?.length > 3 && <div className="flex flex-wrap gap-2">{items.links.map((link, index) => link.url ? <Link className="rounded-lg border border-slate-700 px-3 py-2 text-sm text-slate-300" href={link.url} key={index} preserveScroll>{link.label.replace(/<[^>]*>/g, '')}</Link> : null)}</div>}
+            {items.links?.length > 3 && <div className="flex flex-wrap gap-2">{items.links.map((link, index) => <Link aria-current={link.active ? 'page' : undefined} className={`rounded-lg border px-3 py-2 text-sm ${link.active ? 'border-sky-500 bg-sky-600 text-white' : 'border-slate-700 text-slate-300'} ${!link.url ? 'pointer-events-none opacity-40' : ''}`} href={link.url || '#'} key={index} preserveScroll>{link.label.replace(/<[^>]*>/g, '')}</Link>)}</div>}
             {isModalOpen && <div className="fixed inset-0 z-[100] grid place-items-center overflow-y-auto bg-slate-950/75 p-4 backdrop-blur-sm" onClick={(event) => { if (event.target === event.currentTarget) closeModal(); }}>
                 <div aria-labelledby="content-form-title" aria-modal="true" className="my-auto w-full max-w-3xl" role="dialog">
                     <ContentForm initial={editing} key={editing?.id ?? 'new'} onCancel={closeModal} onSaved={closeModal} type={type} />
@@ -301,9 +367,14 @@ function StaffManagement({ staff = [], auth, isLightMode }) {
     );
 }
 
-function RfcDocumentManagement({ rfcDocument = {}, isLightMode }) {
+function RfcFileUpload({ accept, fileName, hint, isLightMode, label, path, versionName, versionValue }) {
     const [fileInputKey, setFileInputKey] = useState(0);
-    const form = useForm({ document: null, version: rfcDocument.version ?? '1.10' });
+    const initialData = { [fileName]: null };
+    if (versionName) {
+        initialData[versionName] = versionValue ?? '1.10';
+    }
+
+    const form = useForm(initialData);
     const fileInputClass = isLightMode
         ? 'w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition file:mr-3 file:rounded-md file:border-0 file:bg-slate-100 file:px-3 file:py-1.5 file:text-sm file:font-semibold file:text-slate-700'
         : inputClass;
@@ -312,46 +383,52 @@ function RfcDocumentManagement({ rfcDocument = {}, isLightMode }) {
         event.preventDefault();
         form.post('/admin/rfc2350/document', {
             onSuccess: () => {
-                form.reset('document');
+                form.reset(fileName);
                 setFileInputKey((key) => key + 1);
             },
         });
     }
 
     return (
-        <section className="max-w-3xl space-y-5">
+        <form className={`space-y-4 rounded-2xl border p-5 ${isLightMode ? 'border-slate-200 bg-white shadow-sm' : 'border-slate-800 bg-[#111a2a]'}`} onSubmit={submit}>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+                <h2 className={`text-lg font-bold ${isLightMode ? 'text-slate-900' : 'text-white'}`}>{label}</h2>
+                <span className={`text-sm ${isLightMode ? 'text-slate-600' : 'text-slate-400'}`}>{path ? 'File tersedia' : 'Belum diunggah'}</span>
+            </div>
+            {versionName && <Field error={form.errors[versionName]} isLightMode={isLightMode} label="Versi dokumen" onChange={(event) => form.setData(versionName, event.target.value)} placeholder="Contoh: 1.11" value={form.data[versionName]} />}
+            <label className={`block text-sm font-medium ${isLightMode ? 'text-slate-800' : 'text-slate-200'}`}>
+                <span className={isLightMode ? 'mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-600' : labelClass}>{label}</span>
+                <input accept={accept} className={fileInputClass} key={fileInputKey} onChange={(event) => form.setData(fileName, event.target.files?.[0] ?? null)} type="file" />
+                {form.errors[fileName] && <span className="mt-1 block text-xs text-rose-400">{form.errors[fileName]}</span>}
+                <span className={`mt-1 block text-xs ${isLightMode ? 'text-slate-500' : 'text-slate-400'}`}>{hint}</span>
+            </label>
+            <div className="space-y-2">
+                <button className={buttonClass} disabled={form.processing || !form.data[fileName]} type="submit">{form.processing ? 'Mengunggah...' : 'Simpan'}</button>
+                {form.progress && <div className="flex items-center gap-3 text-xs text-slate-400"><progress className="h-2 flex-1 accent-emerald-500" max="100" value={form.progress.percentage} />{form.progress.percentage}%</div>}
+            </div>
+        </form>
+    );
+}
+
+function RfcDocumentManagement({ rfcDocument = {}, isLightMode }) {
+    return (
+        <section className="w-full space-y-5">
             <div>
                 <p className="text-xs font-bold uppercase tracking-[0.2em] text-sky-400">Publikasi resmi</p>
-                <h1 className="mt-2 text-3xl font-extrabold text-white">Dokumen RFC 2350</h1>
-                <p className="mt-2 text-sm text-slate-400">Ganti file PDF dan versi yang ditampilkan pada halaman publik.</p>
+                <h1 className="mt-2 text-3xl font-extrabold text-white">Dokumen RFC 2350 & Kunci PGP</h1>
+                <p className="mt-2 text-sm text-slate-400">Setiap formulir menyimpan satu file secara terpisah. Versi RFC Indonesia dan English dikelola masing-masing.</p>
+                {rfcDocument.updated_at && <p className="mt-2 text-sm text-slate-500">Terakhir diperbarui {rfcDocument.updated_at}</p>}
             </div>
-            <div className={`rounded-2xl border p-5 ${isLightMode ? 'border-slate-200 bg-white shadow-sm' : 'border-slate-800 bg-[#111a2a]'}`}>
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                    <div>
-                        <p className={`text-sm font-bold ${isLightMode ? 'text-slate-900' : 'text-white'}`}>Dokumen aktif · Versi {rfcDocument.version ?? '1.10'}</p>
-                        <p className={`mt-1 text-sm ${isLightMode ? 'text-slate-600' : 'text-slate-400'}`}>{rfcDocument.updated_at ? `Diperbarui ${rfcDocument.updated_at}` : 'Menggunakan dokumen bawaan proyek.'}</p>
-                    </div>
-                    <a className="text-sm font-semibold text-emerald-600 hover:text-emerald-500" href="/rfc2350/download">Unduh dokumen aktif</a>
-                </div>
+            <div className="grid gap-4 lg:grid-cols-3">
+                <RfcFileUpload accept="application/pdf,.pdf" fileName="document" hint="PDF maksimal 20 MB." isLightMode={isLightMode} label="RFC 2350 Bahasa Indonesia" path={rfcDocument.indonesian_path} versionName="version" versionValue={rfcDocument.version} />
+                <RfcFileUpload accept="application/pdf,.pdf" fileName="english_document" hint="English PDF, maksimal 20 MB." isLightMode={isLightMode} label="RFC 2350 English" path={rfcDocument.english_path} versionName="english_version" versionValue={rfcDocument.english_version} />
+                <RfcFileUpload accept="application/pdf,.pdf" fileName="pgp_key" hint="PDF maksimal 20 MB." isLightMode={isLightMode} label="PGP Public Key (PDF)" path={rfcDocument.pgp_path} />
             </div>
-            <form className={`space-y-4 rounded-2xl border p-5 ${isLightMode ? 'border-slate-200 bg-white shadow-sm' : 'border-slate-800 bg-[#111a2a]'}`} onSubmit={submit}>
-                <Field error={form.errors.version} isLightMode={isLightMode} label="Versi dokumen" onChange={(event) => form.setData('version', event.target.value)} placeholder="Contoh: 1.11" value={form.data.version} />
-                <label className={`block text-sm font-medium ${isLightMode ? 'text-slate-800' : 'text-slate-200'}`}>
-                    <span className={isLightMode ? 'mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-600' : labelClass}>File PDF terbaru</span>
-                    <input accept="application/pdf,.pdf" className={fileInputClass} key={fileInputKey} onChange={(event) => form.setData('document', event.target.files?.[0] ?? null)} type="file" />
-                    {form.errors.document && <span className="mt-1 block text-xs text-rose-400">{form.errors.document}</span>}
-                    <span className={`mt-1 block text-xs ${isLightMode ? 'text-slate-500' : 'text-slate-400'}`}>PDF maksimal 20 MB. Sunting dokumen di aplikasi PDF, lalu unggah versi terbarunya di sini.</span>
-                </label>
-                <div className="space-y-2">
-                    <button className={buttonClass} disabled={form.processing || !form.data.document} type="submit">{form.processing ? 'Mengunggah...' : 'Simpan dokumen RFC'}</button>
-                    {form.progress && <div className="flex items-center gap-3 text-xs text-slate-400"><progress className="h-2 flex-1 accent-emerald-500" max="100" value={form.progress.percentage} />{form.progress.percentage}%</div>}
-                </div>
-            </form>
         </section>
     );
 }
 
-export default function AdminPanel({ adminSection, auth = {}, contentType, flash = {}, isLightMode, items, report, reports, rfcDocument = {}, staff, stats, statuses = [] }) {
+export default function AdminPanel({ adminSection, auth = {}, categories = [], contentType, filters = {}, flash = {}, isLightMode, items, report, reports, rfcDocument = {}, staff, stats, statuses = [] }) {
     const sectionKey = adminSection === 'content' ? contentType : adminSection;
 
     return (
@@ -363,9 +440,9 @@ export default function AdminPanel({ adminSection, auth = {}, contentType, flash
                 </header>
                 {flash.adminStatus && <p className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-300">{flash.adminStatus}</p>}
                 {adminSection === 'dashboard' && <Dashboard stats={stats} />}
-                {adminSection === 'reports' && <ReportList reports={reports} />}
+                {adminSection === 'reports' && <ReportList categories={categories} filters={filters} reports={reports} statuses={statuses} />}
                 {adminSection === 'reportDetail' && <ReportDetail report={report} statuses={statuses} />}
-                {adminSection === 'content' && <ContentManagement items={items} type={contentType} />}
+                {adminSection === 'content' && <ContentManagement filters={filters} items={items} type={contentType} />}
                 {adminSection === 'rfcDocument' && <RfcDocumentManagement isLightMode={isLightMode} rfcDocument={rfcDocument} />}
                 {adminSection === 'staff' && <StaffManagement auth={auth} isLightMode={isLightMode} staff={staff} />}
             </div>

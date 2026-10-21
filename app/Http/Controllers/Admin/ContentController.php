@@ -18,17 +18,45 @@ use Inertia\Response;
 
 class ContentController extends Controller
 {
-    public function index(string $type): Response
+    public function index(Request $request, string $type): Response
     {
         $model = $this->contentModel($type);
+        $filters = $request->validate([
+            'search' => ['nullable', 'string', 'max:100'],
+            'status' => ['nullable', Rule::in(['draft', 'published'])],
+            'period' => ['nullable', Rule::in(['all', '30days', 'year'])],
+            'sort' => ['nullable', Rule::in(['newest', 'oldest'])],
+        ]);
+        $search = trim($filters['search'] ?? '');
+        $status = $filters['status'] ?? '';
+        $period = $filters['period'] ?? 'all';
+        $sort = $filters['sort'] ?? 'newest';
+        $query = $model->newQuery();
+
+        if ($search !== '') {
+            $term = mb_strtolower($search);
+            $query->where(fn ($builder) => $builder
+                ->whereRaw('LOWER(title) LIKE ?', ["%{$term}%"])
+                ->orWhereRaw('LOWER(summary) LIKE ?', ["%{$term}%"])
+                ->orWhereRaw('LOWER(content) LIKE ?', ["%{$term}%"]));
+        }
+
+        $query->when($status !== '', fn ($builder) => $builder->where('status', $status));
+
+        if ($period === '30days') {
+            $query->where('created_at', '>=', now()->subDays(30));
+        } elseif ($period === 'year') {
+            $query->where('created_at', '>=', now()->subYear());
+        }
 
         return Inertia::render('Welcome', [
             'page' => 'admin',
             'adminSection' => 'content',
             'contentType' => $type,
-            'items' => $model->newQuery()
-                ->latest('updated_at')
+            'items' => $query
+                ->orderBy('updated_at', $sort === 'oldest' ? 'asc' : 'desc')
                 ->paginate(10)
+                ->withQueryString()
                 ->through(fn (Model $item): array => [
                     'id' => $item->getKey(),
                     'title' => $item->getAttribute('title'),
@@ -38,6 +66,7 @@ class ContentController extends Controller
                     'status' => $item->getAttribute('status'),
                     'published_at' => $item->getAttribute('published_at')?->timezone('Asia/Jakarta')->format('Y-m-d\\TH:i'),
                 ]),
+            'filters' => compact('search', 'status', 'period', 'sort'),
         ]);
     }
 

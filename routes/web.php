@@ -20,6 +20,8 @@ Route::get('/', HomeController::class)->name('home');
 Route::get('/profil', ProfileController::class)->name('profile');
 Route::get('/rfc2350', Rfc2350Controller::class)->name('rfc2350');
 Route::get('/rfc2350/download', [Rfc2350Controller::class, 'download'])->name('rfc2350.download');
+Route::get('/rfc2350/download/english', [Rfc2350Controller::class, 'downloadEnglish'])->name('rfc2350.download.english');
+Route::get('/rfc2350/download/pgp', [Rfc2350Controller::class, 'downloadPgpKey'])->name('rfc2350.download.pgp');
 Route::get('/layanan', ServicesController::class)->name('services');
 Route::get('/kontak', ContactController::class)->name('contact');
 Route::post('/kontak', [ContactController::class, 'send'])

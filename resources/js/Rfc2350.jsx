@@ -14,6 +14,7 @@ const requestLinks = [
         label: 'ENGLISH VERSION',
         title: 'RFC 2350 Document (EN)',
         description: 'Official documentation of the Nindya-CSIRT profile, policies, operational mandate, and incident response services.',
+        download: '/rfc2350/download/english',
         subject: 'Request for RFC 2350 document in English',
     },
 ];
@@ -40,7 +41,10 @@ export default function Rfc2350({ Icon, rfcDocument = {} }) {
             <section className="px-4 py-12 sm:px-6 sm:py-16 lg:px-8 lg:py-20">
                 <div className="mx-auto w-full">
                     <div className="grid gap-4 lg:grid-cols-3">
-                        {requestLinks.map((document) => (
+                        {requestLinks.map((document, index) => {
+                            const available = index === 0 ? rfcDocument.indonesianAvailable : rfcDocument.englishAvailable;
+
+                            return (
                             <article className={`relative flex min-h-[390px] flex-col overflow-hidden rounded-2xl border border-slate-800 bg-[#121b2d] p-6 before:absolute before:inset-x-0 before:top-0 before:h-1 ${document.tone === 'orange' ? 'before:bg-orange-500' : 'before:bg-sky-500'}`} key={document.title}>
                                 <div className="flex items-center justify-between gap-4">
                                     <span className={`grid h-12 w-12 place-items-center rounded-xl border ${document.tone === 'orange' ? 'border-orange-500/30 bg-orange-500/10 text-orange-400' : 'border-sky-500/30 bg-sky-500/10 text-sky-400'}`}>
@@ -54,14 +58,14 @@ export default function Rfc2350({ Icon, rfcDocument = {} }) {
                                 <p className="mt-3 text-base leading-relaxed text-slate-400">{document.description}</p>
                                 <div className="mt-auto border-t border-slate-800 pt-5">
                                     <p className="mb-4 flex items-center gap-2 text-base text-slate-500">
-                                        <Icon className="h-4 w-4" name={document.download ? 'file' : 'mail'} /> {document.download ? `PDF resmi • Versi ${rfcDocument.version ?? '1.10'}` : 'Salinan resmi tersedia melalui tim CSIRT'}
+                                        <Icon className="h-4 w-4" name={available ? 'file' : 'mail'} /> {available ? `PDF resmi • Versi ${index === 0 ? rfcDocument.version ?? '1.10' : rfcDocument.englishVersion ?? '1.10'}` : 'Salinan resmi belum diunggah'}
                                     </p>
-                                    <a className={`inline-flex w-full items-center justify-center gap-2 rounded-lg px-4 py-3 text-base font-bold text-white transition ${document.tone === 'orange' ? 'bg-orange-600 hover:bg-orange-500' : 'border border-sky-500/40 bg-sky-500/10 text-sky-300 hover:bg-sky-500/20'}`} href={document.download ?? `mailto:csirt@nindyakarya.co.id?subject=${encodeURIComponent(document.subject)}`} {...(document.download ? { download: true } : {})}>
-                                        <Icon className="h-4 w-4" name={document.download ? 'download' : 'mail'} /> {document.download ? 'Unduh RFC 2350 (ID)' : 'Minta Salinan Dokumen'}
+                                    <a className={`inline-flex w-full items-center justify-center gap-2 rounded-lg px-4 py-3 text-base font-bold text-white transition ${document.tone === 'orange' ? 'bg-orange-600 hover:bg-orange-500' : 'border border-sky-500/40 bg-sky-500/10 text-sky-300 hover:bg-sky-500/20'} ${!available ? 'pointer-events-none opacity-50' : ''}`} href={available ? document.download : '#'} aria-disabled={!available}>
+                                        <Icon className="h-4 w-4" name={available ? 'download' : 'mail'} /> {available ? (index === 0 ? 'Unduh RFC 2350 (ID)' : 'Download RFC 2350 (EN)') : 'Belum tersedia'}
                                     </a>
                                 </div>
                             </article>
-                        ))}
+                        );})}
 
                         <article className="flex min-h-[390px] flex-col rounded-2xl border border-slate-800 bg-[#121b2d] p-6">
                             <div className="flex items-center justify-between gap-4">
@@ -73,11 +77,11 @@ export default function Rfc2350({ Icon, rfcDocument = {} }) {
                             <h2 className="mt-6 text-2xl font-bold text-white">PGP Public Key Resmi</h2>
                             <p className="mt-3 text-base leading-relaxed text-slate-400">Gunakan kunci publik resmi CSIRT untuk mengenkripsi laporan sensitif setelah menerima berkas dan fingerprint yang terverifikasi.</p>
                             <div className="mt-5 rounded-xl border border-slate-700 bg-[#090e1b]/70 p-4">
-                                <p className="font-mono text-sm font-semibold text-amber-300">Kunci publik belum tersedia di portal.</p>
-                                <p className="mt-2 text-sm leading-relaxed text-slate-500">Hubungi tim CSIRT untuk meminta berkas kunci dan memverifikasi fingerprint melalui kanal resmi.</p>
+                                <p className="font-mono text-sm font-semibold text-amber-300">{rfcDocument.pgpAvailable ? 'Kunci publik resmi tersedia untuk diunduh.' : 'Kunci publik belum tersedia di portal.'}</p>
+                                <p className="mt-2 text-sm leading-relaxed text-slate-500">{rfcDocument.pgpAvailable ? 'Verifikasi fingerprint kunci melalui kanal resmi CSIRT sebelum digunakan.' : 'Berkas kunci akan tersedia setelah admin mengunggahnya.'}</p>
                             </div>
-                            <a className="mt-auto inline-flex w-full items-center justify-center gap-2 rounded-lg bg-emerald-700 px-4 py-3 text-base font-bold text-white transition hover:bg-emerald-600" href="mailto:csirt@nindyakarya.co.id?subject=Permintaan%20PGP%20Public%20Key%20CSIRT">
-                                <Icon className="h-4 w-4" name="mail" /> Minta Kunci Publik
+                            <a className={`mt-auto inline-flex w-full items-center justify-center gap-2 rounded-lg bg-emerald-700 px-4 py-3 text-base font-bold text-white transition hover:bg-emerald-600 ${!rfcDocument.pgpAvailable ? 'pointer-events-none opacity-50' : ''}`} href={rfcDocument.pgpAvailable ? '/rfc2350/download/pgp' : '#'} aria-disabled={!rfcDocument.pgpAvailable}>
+                                <Icon className="h-4 w-4" name={rfcDocument.pgpAvailable ? 'download' : 'mail'} /> {rfcDocument.pgpAvailable ? 'Unduh Kunci Publik' : 'Belum tersedia'}
                             </a>
                         </article>
                     </div>

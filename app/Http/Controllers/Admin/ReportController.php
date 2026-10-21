@@ -15,18 +15,58 @@ class ReportController extends Controller
 {
     private const STATUSES = ['received', 'triage', 'investigating', 'resolved', 'closed'];
 
-    public function index(): Response
+    public function index(Request $request): Response
     {
         Gate::authorize('viewAny', Report::class);
 
-        $reports = Report::query()
+        $filters = $request->validate([
+            'search' => ['nullable', 'string', 'max:100'],
+            'status' => ['nullable', Rule::in(self::STATUSES)],
+            'category' => ['nullable', 'string', 'max:100'],
+            'period' => ['nullable', 'in:all,7days,30days'],
+        ]);
+        $search = trim($filters['search'] ?? '');
+        $status = $filters['status'] ?? '';
+        $category = $filters['category'] ?? '';
+        $period = $filters['period'] ?? 'all';
+
+        $query = Report::query();
+
+        if ($search !== '') {
+            $term = mb_strtolower($search);
+            $query->where(fn ($builder) => $builder
+                ->whereRaw('LOWER(subject) LIKE ?', ["%{$term}%"])
+                ->orWhereRaw('LOWER(category) LIKE ?', ["%{$term}%"]));
+        }
+
+        $query->when($status !== '', fn ($builder) => $builder->where('status', $status));
+        $query->when($category !== '', fn ($builder) => $builder->where('category', $category));
+
+        if ($period === '7days') {
+            $query->where('created_at', '>=', now()->subDays(7));
+        } elseif ($period === '30days') {
+            $query->where('created_at', '>=', now()->subDays(30));
+        }
+
+        $reports = $query
             ->latest()
-            ->get(['id', 'subject', 'category', 'status', 'created_at']);
+            ->paginate(15)
+            ->withQueryString()
+            ->through(fn (Report $report): array => [
+                'id' => $report->id,
+                'subject' => $report->subject,
+                'category' => $report->category,
+                'status' => $report->status,
+                'created_at' => $report->created_at,
+            ]);
 
         return Inertia::render('Welcome', [
             'page' => 'admin',
             'adminSection' => 'reports',
             'reports' => $reports,
+            'filters' => compact('search', 'status', 'category', 'period'),
+            'categories' => Report::query()->distinct()->orderBy('category')->pluck('category'),
+            'statuses' => self::STATUSES,
         ]);
     }
 

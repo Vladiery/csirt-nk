@@ -3,23 +3,51 @@
 namespace App\Http\Controllers;
 
 use App\Models\Artikel;
+use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class ArtikelController extends Controller
 {
-    public function index(): Response
+    public function index(Request $request): Response
     {
-        $artikel = Artikel::query()
+        $filters = $request->validate([
+            'search' => ['nullable', 'string', 'max:100'],
+            'period' => ['nullable', 'in:all,30days,year'],
+            'sort' => ['nullable', 'in:newest,oldest'],
+        ]);
+        $search = trim($filters['search'] ?? '');
+        $period = $filters['period'] ?? 'all';
+        $sort = $filters['sort'] ?? 'newest';
+
+        $query = Artikel::query()
             ->where('status', 'published')
             ->whereNotNull('published_at')
-            ->where('published_at', '<=', now())
-            ->latest('published_at')
-            ->paginate(9);
+            ->where('published_at', '<=', now());
+
+        if ($search !== '') {
+            $term = mb_strtolower($search);
+            $query->where(fn ($builder) => $builder
+                ->whereRaw('LOWER(title) LIKE ?', ["%{$term}%"])
+                ->orWhereRaw('LOWER(summary) LIKE ?', ["%{$term}%"])
+                ->orWhereRaw('LOWER(content) LIKE ?', ["%{$term}%"]));
+        }
+
+        if ($period === '30days') {
+            $query->where('published_at', '>=', now()->subDays(30));
+        } elseif ($period === 'year') {
+            $query->where('published_at', '>=', now()->subYear());
+        }
+
+        $artikel = $query
+            ->orderBy('published_at', $sort === 'oldest' ? 'asc' : 'desc')
+            ->paginate(9)
+            ->withQueryString();
 
         return Inertia::render('Artikel/Index', [
             'page' => 'artikel',
             'artikel' => $artikel,
+            'filters' => compact('search', 'period', 'sort'),
         ]);
     }
 

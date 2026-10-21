@@ -1,4 +1,4 @@
-import { Link } from '@inertiajs/react';
+import { Link, useForm } from '@inertiajs/react';
 
 function formatDate(date) {
     if (!date) {
@@ -53,7 +53,7 @@ function NewsCard({ item, type, isLightMode }) {
     );
 }
 
-export default function News({ page, berita, artikel, isLightMode, selectedItem, recommendations = [] }) {
+export default function News({ page, berita, artikel, isLightMode, selectedItem, recommendations = [], filters = {} }) {
     const isArticlePage = page === 'artikel';
     const records = isArticlePage ? artikel : berita;
     const items = records?.data ?? [];
@@ -64,6 +64,16 @@ export default function News({ page, berita, artikel, isLightMode, selectedItem,
 
     const panelClass = isLightMode ? 'border-slate-200 bg-white text-slate-900' : 'border-slate-800 bg-[#121b2d] text-slate-100';
     const mutedClass = isLightMode ? 'text-slate-600' : 'text-slate-400';
+    const searchForm = useForm({
+        search: filters.search ?? '',
+        period: filters.period ?? 'all',
+        sort: filters.sort ?? 'newest',
+    });
+
+    function search(event) {
+        event.preventDefault();
+        searchForm.get(isArticlePage ? '/artikel' : '/berita', { preserveScroll: true, replace: true });
+    }
 
     if (selectedItem) {
         const detailImage = imageUrl(selectedItem.image_path);
@@ -119,6 +129,27 @@ export default function News({ page, berita, artikel, isLightMode, selectedItem,
                     <Link className={`rounded-lg border px-4 py-2.5 text-sm font-semibold transition ${!isArticlePage ? 'border-emerald-500 bg-emerald-600 text-white shadow-lg shadow-emerald-950/20' : isLightMode ? 'border-slate-200 bg-white text-slate-600 hover:border-emerald-300' : 'border-slate-800 bg-[#121b2d] text-slate-400 hover:border-slate-700 hover:text-slate-200'}`} href="/berita">Semua Berita</Link>
                     <Link className={`rounded-lg border px-4 py-2.5 text-sm font-semibold transition ${isArticlePage ? 'border-emerald-500 bg-emerald-600 text-white shadow-lg shadow-emerald-950/20' : isLightMode ? 'border-slate-200 bg-white text-slate-600 hover:border-emerald-300' : 'border-slate-800 bg-[#121b2d] text-slate-400 hover:border-slate-700 hover:text-slate-200'}`} href="/artikel">Artikel Keamanan</Link>
                 </nav>
+
+                <form className={`mb-8 grid gap-3 rounded-2xl border p-4 sm:grid-cols-[minmax(16rem,1fr)_12rem_12rem_auto_auto] sm:items-end ${panelClass}`} onSubmit={search}>
+                    <label className="block text-sm font-semibold">
+                        <span className={`mb-1.5 block text-xs font-bold uppercase tracking-wide ${mutedClass}`}>Cari {isArticlePage ? 'artikel' : 'berita'}</span>
+                        <input className={`w-full rounded-lg border px-3 py-2.5 outline-none focus:border-emerald-500 ${isLightMode ? 'border-slate-300 bg-white text-slate-900' : 'border-slate-700 bg-[#0b1220] text-slate-100'}`} maxLength="100" name="search" onChange={(event) => searchForm.setData('search', event.target.value)} placeholder="Judul atau isi..." value={searchForm.data.search} />
+                    </label>
+                    <label className="block text-sm font-semibold">
+                        <span className={`mb-1.5 block text-xs font-bold uppercase tracking-wide ${mutedClass}`}>Periode</span>
+                        <select className={`w-full rounded-lg border px-3 py-2.5 outline-none focus:border-emerald-500 ${isLightMode ? 'border-slate-300 bg-white text-slate-900' : 'border-slate-700 bg-[#0b1220] text-slate-100'}`} onChange={(event) => searchForm.setData('period', event.target.value)} value={searchForm.data.period}>
+                            <option value="all">Semua waktu</option><option value="30days">30 hari terakhir</option><option value="year">1 tahun terakhir</option>
+                        </select>
+                    </label>
+                    <label className="block text-sm font-semibold">
+                        <span className={`mb-1.5 block text-xs font-bold uppercase tracking-wide ${mutedClass}`}>Urutan</span>
+                        <select className={`w-full rounded-lg border px-3 py-2.5 outline-none focus:border-emerald-500 ${isLightMode ? 'border-slate-300 bg-white text-slate-900' : 'border-slate-700 bg-[#0b1220] text-slate-100'}`} onChange={(event) => searchForm.setData('sort', event.target.value)} value={searchForm.data.sort}>
+                            <option value="newest">Terbaru</option><option value="oldest">Terlama</option>
+                        </select>
+                    </label>
+                    <button className="rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-emerald-500 disabled:opacity-60" disabled={searchForm.processing} type="submit">Cari</button>
+                    <Link className={`rounded-lg border px-4 py-2.5 text-center text-sm font-semibold ${isLightMode ? 'border-slate-300 text-slate-700 hover:bg-slate-50' : 'border-slate-700 text-slate-300 hover:bg-slate-800'}`} href={isArticlePage ? '/artikel' : '/berita'}>Reset</Link>
+                </form>
 
                 {items.length > 0 ? (
                     <>
