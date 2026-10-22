@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Validator;
 use Inertia\Inertia;
 use Inertia\Response as InertiaResponse;
 
@@ -35,16 +36,21 @@ class RfcDocumentController extends Controller
 
     public function update(Request $request): RedirectResponse
     {
-        $validated = $request->validate([
-            'document' => ['nullable', 'file', 'mimes:pdf', 'mimetypes:application/pdf', 'max:20480'],
+        $validator = Validator::make($request->all(), [
+            'document' => ['nullable', 'file', 'mimes:pdf', 'mimetypes:application/pdf', 'extensions:pdf', 'max:20480'],
             'version' => ['required_with:document', 'nullable', 'string', 'max:20', 'regex:/\A[A-Za-z0-9][A-Za-z0-9._-]{0,19}\z/'],
-            'english_document' => ['nullable', 'file', 'mimes:pdf', 'mimetypes:application/pdf', 'max:20480'],
+            'english_document' => ['nullable', 'file', 'mimes:pdf', 'mimetypes:application/pdf', 'extensions:pdf', 'max:20480'],
             'english_version' => ['required_with:english_document', 'nullable', 'string', 'max:20', 'regex:/\A[A-Za-z0-9][A-Za-z0-9._-]{0,19}\z/'],
-            'pgp_key' => ['nullable', 'file', 'mimes:pdf', 'mimetypes:application/pdf', 'max:20480'],
+            'pgp_key' => ['nullable', 'file', 'mimes:pdf', 'mimetypes:application/pdf', 'extensions:pdf', 'max:20480'],
         ]);
 
         $uploads = array_filter(['document', 'english_document', 'pgp_key'], fn (string $field): bool => $request->hasFile($field));
-        abort_if(count($uploads) !== 1, 422, 'Unggah satu jenis file dalam satu kali penyimpanan.');
+        $validator->after(function ($validator) use ($uploads): void {
+            if (count($uploads) !== 1) {
+                $validator->errors()->add('document', 'Unggah tepat satu file PDF dalam satu kali penyimpanan.');
+            }
+        });
+        $validated = $validator->validate();
 
         $current = DB::table('rfc_documents')->where('id', 1)->first();
         $updates = ['uploaded_by' => $request->user()->id];

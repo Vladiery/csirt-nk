@@ -93,6 +93,14 @@ html {
     background-color: #f1f5f9 !important;
 }
 
+.site-theme[data-theme='light'] [class~='bg-[#0b1120]'],
+.site-theme[data-theme='light'] [class~='bg-[#0b1220]'],
+.site-theme[data-theme='light'] [class~='bg-[#111a2a]'],
+.site-theme[data-theme='light'] [class~='bg-[#111827]'],
+.site-theme[data-theme='light'] [class~='bg-[#151f33]'] {
+    background-color: #ffffff !important;
+}
+
 .site-theme[data-theme='light'] [class~='bg-[#121b2d]'],
 .site-theme[data-theme='light'] [class~='bg-[#101829]'],
 .site-theme[data-theme='light'] [class~='bg-[#172238]'] {
@@ -100,6 +108,19 @@ html {
 }
 
 .site-theme[data-theme='light'] [class~='bg-slate-800'] {
+    background-color: #e2e8f0 !important;
+}
+
+.site-theme[data-theme='light'] [class~='bg-slate-800/40'],
+.site-theme[data-theme='light'] [class~='bg-slate-800/60'],
+.site-theme[data-theme='light'] [class~='bg-slate-800/80'],
+.site-theme[data-theme='light'] [class~='bg-slate-800/90'] {
+    background-color: #e2e8f0 !important;
+}
+
+.site-theme[data-theme='light'] [class~='hover:bg-slate-800']:hover,
+.site-theme[data-theme='light'] [class~='hover:bg-slate-800/40']:hover,
+.site-theme[data-theme='light'] [class~='hover:bg-slate-800/60']:hover {
     background-color: #e2e8f0 !important;
 }
 
@@ -124,6 +145,10 @@ html {
     color: #64748b !important;
 }
 
+.site-theme[data-theme='light'] [class~='text-slate-600'] {
+    color: #475569 !important;
+}
+
 .site-theme[data-theme='light'] [class~='border-slate-800'],
 .site-theme[data-theme='light'] [class~='border-slate-800/80'],
 .site-theme[data-theme='light'] [class~='border-slate-800/90'],
@@ -135,6 +160,20 @@ html {
 .site-theme[data-theme='light'] .admin-panel [class~='bg-[#111a2a]'],
 .site-theme[data-theme='light'] .admin-panel [class~='bg-[#0b1220]'] {
     background-color: #ffffff !important;
+}
+
+.site-theme[data-theme='light'] .admin-panel button[class~='text-white'] {
+    color: #ffffff !important;
+}
+
+.site-theme[data-theme='light'] .admin-panel a[class~='text-white'] {
+    color: #ffffff !important;
+}
+
+.site-theme[data-theme='light'] .admin-panel input:not([type='checkbox']):not([type='radio']),
+.site-theme[data-theme='light'] .admin-panel textarea,
+.site-theme[data-theme='light'] .admin-panel select {
+    color-scheme: light;
 }
 
 .site-theme[data-theme='light'] .admin-panel [class~='text-sky-300'],

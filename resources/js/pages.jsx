@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { Link } from '@inertiajs/react';
 import Profile from './Profile';
 import Report from './Report';
@@ -6,8 +6,9 @@ import Rfc2350 from './Rfc2350';
 import Services from './Services';
 import News from './News';
 import Contact from './Contact';
-import StaffLogin from './StaffLogin';
-import AdminPanel from './AdminPanel';
+
+const StaffLogin = lazy(() => import('./StaffLogin'));
+const AdminPanel = lazy(() => import('./AdminPanel'));
 
 const navigation = [
     { label: 'Beranda', href: '/', active: true },
@@ -223,13 +224,23 @@ function HighlightCard({ highlight }) {
 
 export default function Welcome({ highlights = [], berita, artikel, selectedItem, recommendations = [], page = 'home', flash = {}, auth = {}, adminSection, contentType, items, stats, reports, report, statuses, categories, filters, staff, rfcDocument }) {
     const [isLightMode, setIsLightMode] = useState(() => (
-        typeof window !== 'undefined' && window.localStorage.getItem('nk-csirt-theme') === 'light'
+        typeof window !== 'undefined' && (() => {
+            try {
+                return window.localStorage.getItem('nk-csirt-theme') === 'light';
+            } catch {
+                return false;
+            }
+        })()
     ));
     const toggleTheme = () => {
         setIsLightMode((currentMode) => {
             const nextMode = !currentMode;
 
-            window.localStorage.setItem('nk-csirt-theme', nextMode ? 'light' : 'dark');
+            try {
+                window.localStorage.setItem('nk-csirt-theme', nextMode ? 'light' : 'dark');
+            } catch {
+                // Keep the selected theme for the current page even if storage is unavailable.
+            }
 
             return nextMode;
         });
@@ -379,7 +390,7 @@ export default function Welcome({ highlights = [], berita, artikel, selectedItem
             </header>
 
             <main>
-                {page === 'login' ? <StaffLogin isLightMode={isLightMode} /> : page === 'admin' ? <AdminPanel adminSection={adminSection} auth={auth} categories={categories} contentType={contentType} filters={filters} flash={flash} isLightMode={isLightMode} items={items} report={report} reports={reports} rfcDocument={rfcDocument} staff={staff} stats={stats} statuses={statuses} /> : page === 'profile' ? <Profile Icon={Icon} /> : page === 'rfc2350' ? <Rfc2350 Icon={Icon} rfcDocument={rfcDocument} /> : page === 'services' ? <Services Icon={Icon} isLightMode={isLightMode} /> : page === 'report' ? <Report isLightMode={isLightMode} mailStatus={flash.reportMailStatus} trackingCode={flash.reportTrackingCode} /> : page === 'contact' ? <Contact flash={flash} isLightMode={isLightMode} /> : page === 'berita' || page === 'artikel' ? <News artikel={artikel} berita={berita} filters={filters} isLightMode={isLightMode} page={page} recommendations={recommendations} selectedItem={selectedItem} /> : <>
+                {page === 'login' ? <Suspense fallback={<div className="min-h-[60vh]" />}><StaffLogin isLightMode={isLightMode} /></Suspense> : page === 'admin' ? <Suspense fallback={<div className="min-h-[70vh]" />}><AdminPanel adminSection={adminSection} auth={auth} categories={categories} contentType={contentType} filters={filters} flash={flash} isLightMode={isLightMode} items={items} report={report} reports={reports} rfcDocument={rfcDocument} staff={staff} stats={stats} statuses={statuses} /></Suspense> : page === 'profile' ? <Profile Icon={Icon} /> : page === 'rfc2350' ? <Rfc2350 Icon={Icon} rfcDocument={rfcDocument} /> : page === 'services' ? <Services Icon={Icon} isLightMode={isLightMode} /> : page === 'report' ? <Report isLightMode={isLightMode} mailStatus={flash.reportMailStatus} trackingCode={flash.reportTrackingCode} /> : page === 'contact' ? <Contact flash={flash} isLightMode={isLightMode} /> : page === 'berita' || page === 'artikel' ? <News artikel={artikel} berita={berita} filters={filters} isLightMode={isLightMode} page={page} recommendations={recommendations} selectedItem={selectedItem} /> : <>
                 <section className="relative isolate border-b border-slate-800/80 px-4 pb-12 pt-8 sm:px-6 sm:pb-16 sm:pt-10 lg:px-8 lg:pb-20 lg:pt-12">
                     <div aria-hidden="true" className="absolute inset-0 -z-10 overflow-hidden">
                         <div className="absolute right-[5%] top-[-8%] h-[32rem] w-[32rem] rounded-full bg-orange-500/25 blur-[150px]" />

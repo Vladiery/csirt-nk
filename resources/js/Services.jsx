@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 const coreServices = [
     {
@@ -84,7 +84,7 @@ export default function Services({ Icon, isLightMode }) {
             ? 1
             : currentSlide;
 
-    function resetSupportingServicesLoop() {
+    const resetSupportingServicesLoop = useCallback(() => {
         if (currentSlide === supportingServiceSlides.length + 1 || currentSlide === 0) {
             setTransitionEnabled(false);
             setCurrentSlide(currentSlide === 0 ? supportingServiceSlides.length : 1);
@@ -97,7 +97,20 @@ export default function Services({ Icon, isLightMode }) {
         }
 
         setIsAnimating(false);
-    }
+    }, [currentSlide]);
+
+    useEffect(() => {
+        if (!isAnimating) return undefined;
+
+        const fallbackTimer = window.setTimeout(resetSupportingServicesLoop, 900);
+        return () => window.clearTimeout(fallbackTimer);
+    }, [isAnimating, resetSupportingServicesLoop]);
+
+    const handleSupportingServicesTransitionEnd = useCallback((event) => {
+        if (event.target !== event.currentTarget || event.propertyName !== 'transform') return;
+
+        resetSupportingServicesLoop();
+    }, [resetSupportingServicesLoop]);
 
     return (
         <>
@@ -152,7 +165,7 @@ export default function Services({ Icon, isLightMode }) {
                             <button aria-label="Geser layanan tambahan ke kiri" className={`order-1 grid h-10 w-10 shrink-0 place-items-center rounded-full border text-xl font-semibold shadow-lg transition duration-200 hover:scale-105 hover:border-emerald-500 hover:text-emerald-500 disabled:cursor-not-allowed disabled:opacity-50 ${isLightMode ? 'border-slate-300 bg-white text-slate-700' : 'border-slate-600 bg-[#090e1b]/90 text-slate-100'}`} disabled={isAnimating} onClick={() => moveSupportingServices(-1)} type="button">←</button>
                             <button aria-label="Geser layanan tambahan ke kanan" className={`order-3 grid h-10 w-10 shrink-0 place-items-center rounded-full border text-xl font-semibold shadow-lg transition duration-200 hover:scale-105 hover:border-emerald-500 hover:text-emerald-500 disabled:cursor-not-allowed disabled:opacity-50 ${isLightMode ? 'border-slate-300 bg-white text-slate-700' : 'border-slate-600 bg-[#090e1b]/90 text-slate-100'}`} disabled={isAnimating} onClick={() => moveSupportingServices(1)} type="button">→</button>
                             <div className="order-2 min-w-0 flex-1 overflow-hidden">
-                                <div className="flex" style={{ transform: `translateX(-${currentSlide * 100}%)`, transition: transitionEnabled ? 'transform 700ms cubic-bezier(0.22, 1, 0.36, 1)' : 'none' }} onTransitionEnd={resetSupportingServicesLoop}>
+                                <div className="flex" style={{ transform: `translateX(-${currentSlide * 100}%)`, transition: transitionEnabled ? 'transform 700ms cubic-bezier(0.22, 1, 0.36, 1)' : 'none' }} onTransitionCancel={handleSupportingServicesTransitionEnd} onTransitionEnd={handleSupportingServicesTransitionEnd}>
                                 {[supportingServiceSlides.at(-1), ...supportingServiceSlides, supportingServiceSlides[0]].map((slide, slideIndex) => (
                                     <div className="grid min-w-full grid-cols-2 gap-4" key={slideIndex}>
                                         {slide.map((service) => (

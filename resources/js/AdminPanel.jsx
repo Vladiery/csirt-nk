@@ -5,6 +5,19 @@ const inputClass = 'w-full rounded-lg border border-slate-700 bg-[#0b1220] px-3 
 const labelClass = 'mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-400';
 const buttonClass = 'inline-flex items-center justify-center rounded-lg bg-orange-600 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-orange-500 disabled:cursor-not-allowed disabled:opacity-60';
 
+function toDateTimeLocal(value) {
+    if (!value) return '';
+
+    const valueString = String(value);
+    if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(valueString)) return valueString;
+
+    const parsedDate = new Date(valueString);
+    if (Number.isNaN(parsedDate.getTime())) return '';
+
+    const localDate = new Date(parsedDate.getTime() - parsedDate.getTimezoneOffset() * 60_000);
+    return localDate.toISOString().slice(0, 16);
+}
+
 function Field({ label, error, isLightMode = false, ...props }) {
     const fieldInputClass = isLightMode
         ? 'w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20'
@@ -182,7 +195,7 @@ function ContentForm({ type, initial, onCancel, onSaved }) {
         content: initial?.content ?? '',
         image: null,
         status: initial?.status ?? 'draft',
-        published_at: initial?.published_at ?? '',
+        published_at: toDateTimeLocal(initial?.published_at),
     });
     const [data, setData] = [form.data, form.setData];
 
@@ -301,7 +314,11 @@ function ContentManagement({ type, items = [], filters = {} }) {
                             <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-slate-400">{item.summary || item.content}</p>
                             <div className="mt-auto flex gap-2 border-t border-slate-800 pt-4">
                                 <button className="flex-1 rounded-lg border border-slate-700 px-3 py-2 text-sm font-semibold text-slate-200 transition hover:bg-slate-800" onClick={() => { setEditing(item); setIsModalOpen(true); }} type="button">Ubah</button>
-                                <button className="flex-1 rounded-lg border border-rose-500/30 px-3 py-2 text-sm font-semibold text-rose-300 transition hover:bg-rose-500/10" onClick={() => router.delete(`/admin/content/${type}/${item.id}`)} type="button">Hapus</button>
+                                <button className="flex-1 rounded-lg border border-rose-500/30 px-3 py-2 text-sm font-semibold text-rose-300 transition hover:bg-rose-500/10" onClick={() => {
+                                    if (window.confirm(`Hapus ${singularTitle} “${item.title}”? Tindakan ini tidak dapat dibatalkan.`)) {
+                                        router.delete(`/admin/content/${type}/${item.id}`);
+                                    }
+                                }} type="button">Hapus</button>
                             </div>
                         </div>
                     </article>
@@ -356,7 +373,11 @@ function StaffAccount({ staff, currentUser, isLightMode }) {
             <div className={`self-center text-sm font-semibold ${isLightMode ? 'text-slate-700' : 'text-slate-300'}`}>{isLegacyAccount ? 'Akun lama · analis nonaktif' : 'Admin'}</div>
             <label className={`flex h-10 items-center gap-2 text-sm ${isLightMode ? 'text-slate-700' : 'text-slate-300'}`}><input checked={form.data.is_active} className="h-4 w-4 accent-sky-500" disabled={currentUser || isLegacyAccount} onChange={(event) => form.setData('is_active', event.target.checked)} type="checkbox" />Aktif</label>
             <div className="grid grid-cols-2 gap-2"><Field error={form.errors.password} isLightMode={isLightMode} label="Sandi baru" onChange={(event) => form.setData('password', event.target.value)} type="password" value={form.data.password} /><Field error={form.errors.password_confirmation} isLightMode={isLightMode} label="Konfirmasi" onChange={(event) => form.setData('password_confirmation', event.target.value)} type="password" value={form.data.password_confirmation} /></div>
-            <div className="flex gap-2"><button className="rounded-lg bg-sky-600 px-3 py-2.5 text-sm font-bold text-white hover:bg-sky-500" type="submit">Simpan</button>{!currentUser && <button className="rounded-lg border border-rose-500/30 px-3 py-2.5 text-sm font-semibold text-rose-300 hover:bg-rose-500/10" onClick={() => router.delete(`/admin/staff/${staff.id}`)} type="button">Hapus</button>}</div>
+            <div className="flex gap-2"><button className="rounded-lg bg-sky-600 px-3 py-2.5 text-sm font-bold text-white hover:bg-sky-500" type="submit">Simpan</button>{!currentUser && <button className="rounded-lg border border-rose-500/30 px-3 py-2.5 text-sm font-semibold text-rose-300 hover:bg-rose-500/10" onClick={() => {
+                if (window.confirm(`Hapus akun admin ${staff.name} (${staff.email})? Tindakan ini tidak dapat dibatalkan.`)) {
+                    router.delete(`/admin/staff/${staff.id}`);
+                }
+            }} type="button">Hapus</button>}</div>
         </form>
     );
 }
@@ -375,6 +396,12 @@ function RfcFileUpload({ accept, fileName, hint, isLightMode, label, path, versi
     }
 
     const form = useForm(initialData);
+
+    useEffect(() => {
+        if (versionName && versionValue) {
+            form.setData(versionName, versionValue);
+        }
+    }, [versionName, versionValue]);
     const fileInputClass = isLightMode
         ? 'w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition file:mr-3 file:rounded-md file:border-0 file:bg-slate-100 file:px-3 file:py-1.5 file:text-sm file:font-semibold file:text-slate-700'
         : inputClass;
