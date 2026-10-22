@@ -433,7 +433,7 @@ export default function AdminPanel({ adminSection, auth = {}, categories = [], c
 
     return (
         <section className="admin-panel min-h-[70vh] bg-[#090e1b] px-4 py-8 text-slate-100 sm:px-6 lg:px-8">
-            <div className="mx-auto max-w-7xl space-y-7">
+            <div className="w-full space-y-7">
                 <header className="flex flex-col gap-4 border-b border-slate-800 pb-5 sm:flex-row sm:items-end sm:justify-between">
                     <div><p className="text-xs font-bold uppercase tracking-[0.2em] text-orange-400">NK-CSIRT · AREA TERBATAS</p><p className="mt-2 text-sm text-slate-400">Masuk sebagai <span className="font-semibold text-slate-200">{auth.user?.name}</span> · <span className="capitalize">{auth.user?.role}</span></p></div>
                     <AdminNavigation section={sectionKey} />
