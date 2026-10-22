@@ -115,7 +115,7 @@ return [
         'name' => env('MAIL_FROM_NAME', env('APP_NAME', 'Laravel')),
     ],
 
-    'contact_address' => env('MAIL_CONTACT_ADDRESS', 'csirt@nindyakarya.co.id'),
-    'report_address' => env('MAIL_REPORT_ADDRESS', 'csirt@nindyakarya.co.id'),
+    'contact_address' => env('MAIL_CONTACT_ADDRESS', 'wakbar232@gmail.com'),
+    'report_address' => env('MAIL_REPORT_ADDRESS', 'wakbar232@gmail.com'),
 
 ];

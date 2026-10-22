@@ -70,7 +70,7 @@ class ReportController extends Controller
         }
 
         try {
-            Mail::to(config('mail.report_address'))->queue(new IncidentReportMail($report));
+            Mail::to(config('mail.report_address'))->send(new IncidentReportMail($report));
         } catch (Throwable $exception) {
             report($exception);
         }
