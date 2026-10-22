@@ -86,11 +86,11 @@ export default function Contact({ flash = {}, isLightMode }) {
                     <div className={`rounded-2xl border p-5 sm:p-7 ${panelClass}`}>
                         <div className={`border-b pb-5 ${isLightMode ? 'border-slate-200' : 'border-slate-800'}`}>
                             <h2 className={`text-xl font-bold ${headingClass}`}>Kirim pesan kepada kami</h2>
-                            <p className={`mt-1 text-sm ${mutedClass}`}>Isi formulir ini dan pesan akan dikirim langsung kepada tim CSIRT.</p>
+                            <p className={`mt-1 text-sm ${mutedClass}`}>Gunakan formulir ini untuk menyampaikan pesan kepada tim CSIRT.</p>
                         </div>
                         {flash.contactSent && (
-                            <div className={`mt-5 rounded-lg border px-4 py-3 text-sm ${flash.contactMailLogged ? 'border-amber-300 bg-amber-50 text-amber-900' : 'border-emerald-300 bg-emerald-50 text-emerald-800'}`} role="status">
-                                {flash.contactMailLogged ? 'Pesan tercatat di log aplikasi, tetapi belum dikirim ke inbox. SMTP perlu diaktifkan untuk pengiriman email.' : 'Pesan berhasil dikirim kepada tim CSIRT.'}
+                            <div className="mt-5 rounded-lg border border-emerald-300 bg-emerald-50 px-4 py-3 text-sm text-emerald-800" role="status">
+                                Terima kasih. Pesan Anda sudah diterima melalui formulir kontak.
                             </div>
                         )}
                         {errors.contact && <p className="mt-5 rounded-lg border border-rose-300 bg-rose-50 px-4 py-3 text-sm text-rose-800" role="alert">{errors.contact}</p>}

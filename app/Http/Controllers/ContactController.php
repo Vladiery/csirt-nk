@@ -22,9 +22,9 @@ class ContactController extends Controller
     public function send(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'name' => ['required', 'string', 'max:120'],
+            'name' => ['required', 'string', 'max:120', 'not_regex:/[\r\n]/'],
             'email' => ['required', 'email', 'max:254'],
-            'subject' => ['required', 'string', 'max:160'],
+            'subject' => ['required', 'string', 'max:160', 'not_regex:/[\r\n]/'],
             'message' => ['required', 'string', 'max:5000'],
         ]);
 
@@ -43,9 +43,6 @@ class ContactController extends Controller
                 ->withInput();
         }
 
-        return to_route('contact')->with([
-            'contactSent' => true,
-            'contactMailLogged' => config('mail.default') === 'log',
-        ]);
+        return to_route('contact')->with('contactSent', true);
     }
 }

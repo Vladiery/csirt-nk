@@ -30,7 +30,6 @@ Route::post('/kontak', [ContactController::class, 'send'])
 
 Route::get('/login', [StaffAuthController::class, 'create'])->name('login');
 Route::post('/login', [StaffAuthController::class, 'store'])
-    ->middleware('throttle:5,1')
     ->name('login.store');
 Route::post('/logout', [StaffAuthController::class, 'destroy'])
     ->middleware(['auth', 'active.staff'])
@@ -53,14 +52,17 @@ Route::middleware(['auth', 'active.staff'])->prefix('admin')->name('admin.')->gr
         Route::post('/rfc2350/document', [AdminRfcDocumentController::class, 'update'])->name('rfc2350.update');
         Route::get('/reports', [AdminReportController::class, 'index'])->name('reports.index');
         Route::get('/reports/{report}', [AdminReportController::class, 'show'])->name('reports.show');
+        Route::get('/reports/{report}/evidence/{index}', [AdminReportController::class, 'downloadEvidence'])
+            ->whereNumber('index')
+            ->name('reports.evidence');
         Route::patch('/reports/{report}', [AdminReportController::class, 'update'])->name('reports.update');
     });
 });
 
-Route::get('/berita', [BeritaController::class, 'index'])->name('berita.index');
+Route::get('/berita', [BeritaController::class, 'index'])->middleware('throttle:60,1')->name('berita.index');
 Route::get('/berita/{berita:slug}', [BeritaController::class, 'show'])->name('berita.show');
 
-Route::get('/artikel', [ArtikelController::class, 'index'])->name('artikel.index');
+Route::get('/artikel', [ArtikelController::class, 'index'])->middleware('throttle:60,1')->name('artikel.index');
 Route::get('/artikel/{artikel:slug}', [ArtikelController::class, 'show'])->name('artikel.show');
 
 Route::get('/laporan-insiden', [ReportController::class, 'create'])->name('reports.create');

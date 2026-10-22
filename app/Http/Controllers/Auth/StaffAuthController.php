@@ -7,6 +7,7 @@ use App\UserRole;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -37,15 +38,26 @@ class StaffAuthController extends Controller
             'password' => ['required', 'string', 'max:255'],
         ]);
 
+        $limiterKey = 'staff-login:'.hash('sha256', $credentials['email'].'|'.$request->ip());
+
+        if (RateLimiter::tooManyAttempts($limiterKey, 5)) {
+            throw ValidationException::withMessages([
+                'email' => 'Terlalu banyak percobaan masuk. Coba lagi dalam '.RateLimiter::availableIn($limiterKey).' detik.',
+            ]);
+        }
+
         if (! Auth::attempt($credentials + [
             'is_active' => true,
             'role' => UserRole::Admin->value,
         ])) {
+            RateLimiter::hit($limiterKey, 60);
+
             throw ValidationException::withMessages([
                 'email' => 'Email, kata sandi, atau status akun tidak sesuai.',
             ]);
         }
 
+        RateLimiter::clear($limiterKey);
         $request->session()->regenerate();
 
         return to_route('admin.dashboard');

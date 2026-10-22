@@ -9,6 +9,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Password;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -32,7 +33,7 @@ class StaffController extends Controller
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', 'unique:users,email'],
-            'password' => ['required', 'string', 'max:255', 'confirmed'],
+            'password' => ['required', 'confirmed', Password::min(12)->letters()->numbers()],
             'is_active' => ['required', 'boolean'],
         ]);
 
@@ -49,7 +50,7 @@ class StaffController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user->id)],
             'is_active' => ['required', 'boolean'],
-            'password' => ['nullable', 'string', 'max:255', 'confirmed'],
+            'password' => ['nullable', 'confirmed', Password::min(12)->letters()->numbers()],
         ]);
 
         abort_if($request->user()->is($user) && ! $validated['is_active'], 422, 'Anda tidak dapat menonaktifkan akun sendiri.');
@@ -58,15 +59,12 @@ class StaffController extends Controller
             $validated['is_active'] = false;
         }
 
-        DB::transaction(function () use ($user, $validated): void {
-            if ($user->role === UserRole::Admin && $user->is_active && ! $validated['is_active']) {
-                $anotherActiveAdminExists = User::query()
-                    ->whereKeyNot($user->id)
-                    ->where('role', UserRole::Admin->value)
-                    ->where('is_active', true)
-                    ->exists();
+        $passwordChanged = filled($validated['password'] ?? null);
+        $accountDeactivated = $user->is_active && ! $validated['is_active'];
 
-                abort_unless($anotherActiveAdminExists, 422, 'Minimal harus ada satu admin aktif.');
+        DB::transaction(function () use ($request, $user, $validated, $passwordChanged, $accountDeactivated): void {
+            if ($user->role === UserRole::Admin && $user->is_active && ! $validated['is_active']) {
+                $this->ensureAnotherActiveAdminRemains($user);
             }
 
             if (blank($validated['password'])) {
@@ -74,6 +72,10 @@ class StaffController extends Controller
             }
 
             $user->update($validated);
+
+            if ($passwordChanged || $accountDeactivated) {
+                $this->revokeDatabaseSessions($user, $request->user()->is($user) ? $request->session()->getId() : null);
+            }
         });
 
         return back()->with('adminStatus', 'Akun petugas berhasil diperbarui.');
@@ -83,18 +85,47 @@ class StaffController extends Controller
     {
         abort_if($request->user()->is($user), 422, 'Anda tidak dapat menghapus akun sendiri.');
 
-        if ($user->role === UserRole::Admin && $user->is_active) {
-            $anotherActiveAdminExists = User::query()
-                ->whereKeyNot($user->id)
-                ->where('role', UserRole::Admin->value)
-                ->where('is_active', true)
-                ->exists();
+        DB::transaction(function () use ($user): void {
+            if ($user->role === UserRole::Admin && $user->is_active) {
+                $this->ensureAnotherActiveAdminRemains($user);
+            }
 
-            abort_unless($anotherActiveAdminExists, 422, 'Minimal harus ada satu admin aktif.');
-        }
-
-        $user->delete();
+            $user->delete();
+        });
 
         return back()->with('adminStatus', 'Akun petugas berhasil dihapus.');
+    }
+
+    private function ensureAnotherActiveAdminRemains(User $user): void
+    {
+        $activeAdminIds = User::query()
+            ->where('role', UserRole::Admin->value)
+            ->where('is_active', true)
+            ->orderBy('id')
+            ->lockForUpdate()
+            ->pluck('id');
+
+        $anotherActiveAdminExists = $activeAdminIds->contains(
+            fn ($id): bool => (int) $id !== (int) $user->id,
+        );
+
+        abort_unless($anotherActiveAdminExists, 422, 'Minimal harus ada satu admin aktif.');
+    }
+
+    private function revokeDatabaseSessions(User $user, ?string $exceptSessionId = null): void
+    {
+        if (config('session.driver') !== 'database') {
+            return;
+        }
+
+        $sessions = DB::connection(config('session.connection'))
+            ->table(config('session.table', 'sessions'))
+            ->where('user_id', $user->getKey());
+
+        if ($exceptSessionId !== null) {
+            $sessions->where('id', '!=', $exceptSessionId);
+        }
+
+        $sessions->delete();
     }
 }

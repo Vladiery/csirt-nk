@@ -50,9 +50,7 @@ class HandleInertiaRequests extends Middleware
             ],
             'flash' => [
                 'reportTrackingCode' => fn () => $request->session()->get('reportTrackingCode'),
-                'reportMailStatus' => fn () => $request->session()->get('reportMailStatus'),
                 'contactSent' => fn () => $request->session()->get('contactSent'),
-                'contactMailLogged' => fn () => $request->session()->get('contactMailLogged'),
                 'adminStatus' => fn () => $request->session()->get('adminStatus'),
             ],
         ];

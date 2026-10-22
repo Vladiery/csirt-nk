@@ -8,6 +8,8 @@ use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rules\Password;
 
 #[Signature('csirt:reset-admin-password {email}')]
 #[Description('Reset an active CSIRT administrator password')]
@@ -37,7 +39,7 @@ class ResetStaffPassword extends Command
             'password' => $password,
             'password_confirmation' => $passwordConfirmation,
         ], [
-            'password' => ['required', 'string', 'max:255', 'confirmed'],
+            'password' => ['required', 'confirmed', Password::min(12)->letters()->numbers()],
         ]);
 
         if ($validator->fails()) {
@@ -48,8 +50,17 @@ class ResetStaffPassword extends Command
             return self::FAILURE;
         }
 
-        $user->password = $validator->validated()['password'];
-        $user->save();
+        DB::transaction(function () use ($user, $validator): void {
+            $user->password = $validator->validated()['password'];
+            $user->save();
+
+            if (config('session.driver') === 'database') {
+                DB::connection(config('session.connection'))
+                    ->table(config('session.table', 'sessions'))
+                    ->where('user_id', $user->getKey())
+                    ->delete();
+            }
+        });
 
         $this->components->info('Kata sandi admin berhasil diperbarui.');
 

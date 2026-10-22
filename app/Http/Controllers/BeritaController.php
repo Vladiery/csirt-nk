@@ -27,10 +27,11 @@ class BeritaController extends Controller
 
         if ($search !== '') {
             $term = mb_strtolower($search);
+            $pattern = '%'.str_replace(['!', '%', '_'], ['!!', '!%', '!_'], $term).'%';
             $query->where(fn ($builder) => $builder
-                ->whereRaw('LOWER(title) LIKE ?', ["%{$term}%"])
-                ->orWhereRaw('LOWER(summary) LIKE ?', ["%{$term}%"])
-                ->orWhereRaw('LOWER(content) LIKE ?', ["%{$term}%"]));
+                ->whereRaw("LOWER(title) LIKE ? ESCAPE '!'", [$pattern])
+                ->orWhereRaw("LOWER(summary) LIKE ? ESCAPE '!'", [$pattern])
+                ->orWhereRaw("LOWER(content) LIKE ? ESCAPE '!'", [$pattern]));
         }
 
         if ($period === '30days') {
@@ -71,8 +72,7 @@ class BeritaController extends Controller
 
         return Inertia::render('Berita/Show', [
             'page' => 'berita',
-            'berita' => $berita,
-            'selectedItem' => $berita,
+            'selectedItem' => $berita->only(['id', 'title', 'slug', 'summary', 'content', 'image_path', 'published_at']),
             'recommendations' => $recommendations,
         ]);
     }

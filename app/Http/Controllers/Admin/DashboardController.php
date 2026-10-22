@@ -31,6 +31,9 @@ class DashboardController extends Controller
                 'berita' => Berita::query()->count(),
                 'artikel' => Artikel::query()->count(),
                 'reports' => Report::query()->count(),
+                'unhandledReports' => Report::query()
+                    ->whereIn('status', ['received', 'triage', 'investigating'])
+                    ->count(),
                 'reportsByStatus' => $reportsByStatus,
             ],
         ]);

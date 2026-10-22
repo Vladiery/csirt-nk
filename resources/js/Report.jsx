@@ -14,7 +14,7 @@ function ReportField({ id, label, required = false, error, hint, children, isLig
     );
 }
 
-export default function Report({ isLightMode, mailStatus, trackingCode }) {
+export default function Report({ isLightMode, trackingCode }) {
     const [evidenceLimitError, setEvidenceLimitError] = useState('');
     const { data, setData, post, reset, processing, errors, progress } = useForm({
         reporter_name: '',
@@ -97,7 +97,7 @@ export default function Report({ isLightMode, mailStatus, trackingCode }) {
                     <div className={`mb-6 rounded-xl border p-4 ${isLightMode ? 'border-emerald-200 bg-emerald-50 text-emerald-800' : 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300'}`}>
                         <p className="font-semibold">Laporan berhasil diterima.</p>
                         <p className="mt-1 text-sm">Simpan kode pelacakan ini: <code className="font-mono font-bold">{trackingCode}</code></p>
-                        <p className="mt-2 text-sm">{mailStatus === 'failed' ? 'Laporan sudah tersimpan di panel admin, tetapi email notifikasi gagal dikirim.' : mailStatus === 'logged' ? 'Email notifikasi tercatat di log lokal. Pengiriman email nyata memerlukan konfigurasi SMTP.' : 'Email notifikasi juga telah dikirim ke tim NK-CSIRT.'}</p>
+                        <p className="mt-2 text-sm">Laporan Anda telah tersimpan dan akan ditinjau oleh tim NK-CSIRT.</p>
                     </div>
                 )}
 

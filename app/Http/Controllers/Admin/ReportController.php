@@ -7,6 +7,8 @@ use App\Models\Report;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Storage;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -89,7 +91,14 @@ class ReportController extends Controller
                 'affected_url' => $report->affected_url,
                 'occurred_at' => $report->occurred_at?->toISOString(),
                 'handling_notes' => $report->handling_notes,
-                'evidence' => collect($report->evidence_paths ?? [])->map(fn (string $path): string => basename($path)),
+                'evidence' => collect($report->evidence_paths ?? [])->values()->map(function (string|array $item, int $index) use ($report): array {
+                    $name = is_array($item) ? ($item['name'] ?? null) : null;
+
+                    return [
+                        'name' => is_string($name) && $name !== '' ? $name : 'Bukti lampiran '.($index + 1),
+                        'url' => "/admin/reports/{$report->id}/evidence/{$index}",
+                    ];
+                }),
             ],
             'statuses' => self::STATUSES,
         ]);
@@ -107,5 +116,29 @@ class ReportController extends Controller
         $report->fill($validated)->save();
 
         return back()->with('adminStatus', 'Penanganan laporan berhasil diperbarui.');
+    }
+
+    public function downloadEvidence(Report $report, int $index): StreamedResponse
+    {
+        Gate::authorize('view', $report);
+
+        $evidence = array_values($report->evidence_paths ?? [])[$index] ?? null;
+        $path = is_array($evidence) ? ($evidence['path'] ?? null) : $evidence;
+        abort_unless(is_string($path) && str_starts_with($path, 'reports/evidence/'), 404);
+
+        $disk = Storage::disk('local');
+        abort_unless($disk->exists($path), 404);
+
+        $originalName = is_array($evidence) ? ($evidence['name'] ?? null) : null;
+        $filename = is_string($originalName) && $originalName !== ''
+            ? basename(str_replace('\\', '/', $originalName))
+            : 'bukti-'.($index + 1).'.'.(pathinfo($path, PATHINFO_EXTENSION) ?: 'bin');
+        $filename = preg_replace('/[\x00-\x1F\x7F]/', '', $filename) ?: 'bukti-'.($index + 1).'.bin';
+
+        return $disk->download($path, $filename, [
+            'Content-Type' => $disk->mimeType($path) ?: 'application/octet-stream',
+            'X-Content-Type-Options' => 'nosniff',
+            'Cache-Control' => 'private, no-store',
+        ]);
     }
 }

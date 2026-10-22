@@ -24,7 +24,7 @@ class HomeController extends Controller
                 'summary' => $item->summary,
                 'imagePath' => $item->image_path,
                 'publishedAt' => $item->published_at->toISOString(),
-                'url' => route('berita.show', ['berita' => $item->slug]),
+                'url' => route('berita.show', ['berita' => $item->slug], absolute: false),
             ]);
 
         $artikel = Artikel::query()
@@ -40,7 +40,7 @@ class HomeController extends Controller
                 'summary' => $item->summary,
                 'imagePath' => $item->image_path,
                 'publishedAt' => $item->published_at->toISOString(),
-                'url' => route('artikel.show', ['artikel' => $item->slug]),
+                'url' => route('artikel.show', ['artikel' => $item->slug], absolute: false),
             ]);
 
         $highlights = $berita

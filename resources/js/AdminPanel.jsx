@@ -74,10 +74,11 @@ function Dashboard({ stats = {} }) {
                 <h1 className="mt-2 text-3xl font-extrabold text-white">Ringkasan</h1>
                 <p className="mt-2 text-sm text-slate-400">Ikhtisar data yang tercatat pada sistem.</p>
             </div>
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
                 <StatCard detail="Semua status" label="Berita" value={stats.berita ?? 0} />
                 <StatCard detail="Semua status" label="Artikel" value={stats.artikel ?? 0} />
                 <StatCard detail="Laporan tersimpan" label="Laporan insiden" value={stats.reports ?? 0} />
+                <StatCard detail="Received, triage, dan investigating" label="Laporan belum ditangani" value={stats.unhandledReports ?? 0} />
             </div>
             <section className="rounded-2xl border border-slate-800 bg-[#111a2a] p-5">
                 <h2 className="text-lg font-bold text-white">Laporan menurut status</h2>
@@ -175,7 +176,7 @@ function ReportDetail({ report, statuses = [] }) {
                         <div><dt className={labelClass}>URL terdampak</dt><dd className="break-all text-sm text-slate-200">{report.affected_url || 'Tidak dicantumkan'}</dd></div>
                     </dl>
                     <div className="mt-5"><h3 className={labelClass}>Uraian</h3><p className="whitespace-pre-wrap text-sm leading-relaxed text-slate-300">{report.description}</p></div>
-                    {report.evidence?.length > 0 && <div className="mt-5"><h3 className={labelClass}>Bukti terlampir</h3><ul className="list-inside list-disc text-sm text-slate-300">{report.evidence.map((file) => <li key={file}>{file}</li>)}</ul></div>}
+                    {report.evidence?.length > 0 && <div className="mt-5"><h3 className={labelClass}>Bukti terlampir</h3><ul className="list-inside list-disc text-sm text-slate-300">{report.evidence.map((file) => <li key={file.url}><a className="font-semibold text-sky-300 underline decoration-sky-500/40 underline-offset-2 hover:text-sky-200" href={file.url}>{file.name}</a></li>)}</ul></div>}
                 </div>
             </div>
             <form className="h-fit space-y-5 rounded-2xl border border-slate-800 bg-[#111a2a] p-5" onSubmit={submit}>

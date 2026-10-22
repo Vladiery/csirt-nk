@@ -8,6 +8,7 @@ use App\Models\Report;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -36,35 +37,44 @@ class ReportController extends Controller
         ]));
 
         $report->tracking_code = (string) Str::uuid();
-        $report->evidence_paths = collect($request->file('evidence', []))
-            ->map(function (UploadedFile $file): string {
-                $path = $file->store('reports/evidence', 'local');
-
-                if (! is_string($path)) {
-                    throw new RuntimeException('Unable to store report evidence.');
-                }
-
-                return $path;
-            })
-            ->all();
-        $report->save();
-
-        $mailStatus = 'sent';
+        $storedPaths = [];
 
         try {
-            Mail::to(config('mail.report_address'))->send(new IncidentReportMail($report));
+            $report->evidence_paths = collect($request->file('evidence', []))
+                ->map(function (UploadedFile $file) use (&$storedPaths): array {
+                    $path = $file->store('reports/evidence', 'local');
 
-            if (config('mail.default') === 'log') {
-                $mailStatus = 'logged';
-            }
+                    if (! is_string($path)) {
+                        throw new RuntimeException('Unable to store report evidence.');
+                    }
+
+                    $storedPaths[] = $path;
+                    $name = basename(str_replace('\\', '/', $file->getClientOriginalName()));
+                    $name = preg_replace('/[\x00-\x1F\x7F]/', '', $name) ?: 'bukti.'.($file->guessExtension() ?: 'bin');
+
+                    return [
+                        'path' => $path,
+                        'name' => $name,
+                        'mime' => $file->getMimeType() ?: 'application/octet-stream',
+                        'size' => $file->getSize(),
+                    ];
+                })
+                ->all();
+            $report->save();
         } catch (Throwable $exception) {
-            report($exception);
-            $mailStatus = 'failed';
+            if ($storedPaths !== []) {
+                Storage::disk('local')->delete($storedPaths);
+            }
+
+            throw $exception;
         }
 
-        return to_route('reports.create')->with([
-            'reportTrackingCode' => $report->tracking_code,
-            'reportMailStatus' => $mailStatus,
-        ]);
+        try {
+            Mail::to(config('mail.report_address'))->queue(new IncidentReportMail($report));
+        } catch (Throwable $exception) {
+            report($exception);
+        }
+
+        return to_route('reports.create')->with('reportTrackingCode', $report->tracking_code);
     }
 }
