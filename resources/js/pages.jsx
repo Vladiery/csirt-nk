@@ -1,14 +1,14 @@
 import { lazy, Suspense, useEffect, useState } from 'react';
 import { Link } from '@inertiajs/react';
-import Profile from './Profile';
-import Report from './Report';
-import Rfc2350 from './Rfc2350';
-import Services from './Services';
-import News from './News';
-import Contact from './Contact';
+import Profile from './pages/Profile';
+import Report from './pages/Report';
+import Rfc2350 from './pages/Rfc2350';
+import Services from './pages/Services';
+import News from './pages/News';
+import Contact from './pages/Contact';
 
-const StaffLogin = lazy(() => import('./StaffLogin'));
-const AdminPanel = lazy(() => import('./AdminPanel'));
+const StaffLogin = lazy(() => import('./auth/StaffLogin'));
+const AdminPanel = lazy(() => import('./admin/AdminPanel'));
 
 const navigation = [
     { label: 'Beranda', href: '/', active: true },

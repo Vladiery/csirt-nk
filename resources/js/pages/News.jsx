@@ -1,5 +1,5 @@
 import { Link, useForm } from '@inertiajs/react';
-import ContentBody from './ContentBody';
+import ContentBody from '../shared/ContentBody';
 
 function formatDate(date) {
     if (!date) {
