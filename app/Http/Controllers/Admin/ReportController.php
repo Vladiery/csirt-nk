@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Report;
+use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -38,7 +39,8 @@ class ReportController extends Controller
             $term = mb_strtolower($search);
             $query->where(fn ($builder) => $builder
                 ->whereRaw('LOWER(subject) LIKE ?', ["%{$term}%"])
-                ->orWhereRaw('LOWER(category) LIKE ?', ["%{$term}%"]));
+                ->orWhereRaw('LOWER(category) LIKE ?', ["%{$term}%"])
+                ->orWhereRaw('CAST(tracking_code AS VARCHAR) LIKE ?', ["%{$term}%"]));
         }
 
         $query->when($status !== '', fn ($builder) => $builder->where('status', $status));
@@ -52,10 +54,11 @@ class ReportController extends Controller
 
         $reports = $query
             ->latest()
-            ->paginate(15)
+            ->paginate(20)
             ->withQueryString()
             ->through(fn (Report $report): array => [
                 'id' => $report->id,
+                'tracking_code' => $report->tracking_code,
                 'subject' => $report->subject,
                 'category' => $report->category,
                 'status' => $report->status,
@@ -81,6 +84,7 @@ class ReportController extends Controller
             'adminSection' => 'reportDetail',
             'report' => [
                 'id' => $report->id,
+                'tracking_code' => $report->tracking_code,
                 'subject' => $report->subject,
                 'category' => $report->category,
                 'status' => $report->status,
@@ -91,6 +95,8 @@ class ReportController extends Controller
                 'affected_url' => $report->affected_url,
                 'occurred_at' => $report->occurred_at?->toISOString(),
                 'handling_notes' => $report->handling_notes,
+                'assigned_to_id' => $report->assigned_to_id,
+                'assigned_to_name' => $report->assignedTo?->name,
                 'evidence' => collect($report->evidence_paths ?? [])->values()->map(function (string|array $item, int $index) use ($report): array {
                     $name = is_array($item) ? ($item['name'] ?? null) : null;
 
@@ -101,6 +107,7 @@ class ReportController extends Controller
                 }),
             ],
             'statuses' => self::STATUSES,
+            'assignees' => User::query()->where('is_active', true)->orderBy('name')->get(['id', 'name', 'role']),
         ]);
     }
 
@@ -111,6 +118,7 @@ class ReportController extends Controller
         $validated = $request->validate([
             'status' => ['required', Rule::in(self::STATUSES)],
             'handling_notes' => ['nullable', 'string', 'max:20000'],
+            'assigned_to_id' => ['nullable', Rule::exists('users', 'id')->where('is_active', true)],
         ]);
 
         $report->fill($validated)->save();

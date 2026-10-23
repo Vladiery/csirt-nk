@@ -27,7 +27,7 @@ class ReportFactory extends Factory
             'description' => fake()->paragraphs(3, true),
             'affected_url' => fake()->url(),
             'occurred_at' => fake()->dateTimeBetween('-7 days', 'now'),
-            'evidence_path' => null,
+            'evidence_paths' => null,
             'status' => 'received',
         ];
     }

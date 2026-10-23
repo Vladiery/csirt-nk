@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Artikel;
+use App\Models\ContentCategory;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -15,15 +16,18 @@ class ArtikelController extends Controller
             'search' => ['nullable', 'string', 'max:100'],
             'period' => ['nullable', 'in:all,30days,year'],
             'sort' => ['nullable', 'in:newest,oldest'],
+            'category' => ['nullable', 'string', 'max:120'],
         ]);
         $search = trim($filters['search'] ?? '');
         $period = $filters['period'] ?? 'all';
         $sort = $filters['sort'] ?? 'newest';
+        $category = $filters['category'] ?? '';
 
         $query = Artikel::query()
             ->where('status', 'published')
             ->whereNotNull('published_at')
             ->where('published_at', '<=', now());
+        $query->when($category !== '', fn ($builder) => $builder->whereHas('category', fn ($categories) => $categories->where('slug', $category)));
 
         if ($search !== '') {
             $term = mb_strtolower($search);
@@ -42,13 +46,15 @@ class ArtikelController extends Controller
 
         $artikel = $query
             ->orderBy('published_at', $sort === 'oldest' ? 'asc' : 'desc')
-            ->paginate(9)
+            ->with(['category', 'tags'])
+            ->paginate(12)
             ->withQueryString();
 
         return Inertia::render('Artikel/Index', [
             'page' => 'artikel',
             'artikel' => $artikel,
-            'filters' => compact('search', 'period', 'sort'),
+            'filters' => compact('search', 'period', 'sort', 'category'),
+            'contentCategories' => ContentCategory::query()->where('type', 'artikel')->orderBy('name')->get(['id', 'name', 'slug']),
         ]);
     }
 
@@ -73,6 +79,8 @@ class ArtikelController extends Controller
         return Inertia::render('Artikel/Show', [
             'page' => 'artikel',
             'selectedItem' => $artikel->only(['id', 'title', 'slug', 'summary', 'content', 'image_path', 'published_at']),
+            'contentCategory' => $artikel->category?->only(['name', 'slug']),
+            'contentTags' => $artikel->tags()->orderBy('name')->get(['name', 'slug']),
             'recommendations' => $recommendations,
         ]);
     }

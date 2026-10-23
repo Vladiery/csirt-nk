@@ -22,7 +22,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'assigned_to_id',
     'handling_notes',
 ])]
-#[Hidden(['reporter_name', 'reporter_email', 'description', 'affected_url', 'evidence_path', 'evidence_paths', 'handling_notes', 'assigned_to_id'])]
+#[Hidden(['reporter_name', 'reporter_email', 'description', 'affected_url', 'evidence_paths', 'handling_notes', 'assigned_to_id'])]
 class Report extends Model
 {
     /** @use HasFactory<ReportFactory> */

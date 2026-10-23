@@ -44,6 +44,8 @@ Route::middleware(['auth', 'active.staff'])->prefix('admin')->name('admin.')->gr
         Route::post('/content/{type}', [AdminContentController::class, 'store'])->name('content.store');
         Route::put('/content/{type}/{id}', [AdminContentController::class, 'update'])->name('content.update');
         Route::delete('/content/{type}/{id}', [AdminContentController::class, 'destroy'])->name('content.destroy');
+        Route::get('/content/{type}/{id}/revisions', [AdminContentController::class, 'revisions'])->name('content.revisions');
+        Route::post('/content/{type}/{id}/revisions/{revision}/restore', [AdminContentController::class, 'restoreRevision'])->name('content.revisions.restore');
         Route::get('/staff', [AdminStaffController::class, 'index'])->name('staff.index');
         Route::post('/staff', [AdminStaffController::class, 'store'])->name('staff.store');
         Route::patch('/staff/{user}', [AdminStaffController::class, 'update'])->name('staff.update');

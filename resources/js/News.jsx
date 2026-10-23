@@ -1,4 +1,5 @@
 import { Link, useForm } from '@inertiajs/react';
+import ContentBody from './ContentBody';
 
 function formatDate(date) {
     if (!date) {
@@ -40,10 +41,12 @@ function NewsCard({ item, type, isLightMode }) {
             </Link>
             <div className="flex flex-1 flex-col p-5">
                 <p className={`font-mono text-xs tracking-wide ${isLightMode ? 'text-slate-500' : 'text-slate-500'}`}>{formatDate(item.published_at)} <span className="px-1 text-emerald-500">•</span> INFORMASI RESMI</p>
+                {item.category && <p className="mt-2 text-xs font-bold uppercase tracking-wide text-emerald-500">{item.category.name}</p>}
                 <h2 className={`mt-3 text-xl font-bold leading-snug ${isLightMode ? 'text-slate-900' : 'text-slate-100'}`}>
                     <Link className="transition hover:text-emerald-500" href={href}>{item.title}</Link>
                 </h2>
                 <p className={`mt-3 line-clamp-4 text-sm leading-relaxed ${isLightMode ? 'text-slate-600' : 'text-slate-400'}`}>{item.summary || 'Informasi terbaru dari Nindya CSIRT.'}</p>
+                {item.tags?.length > 0 && <p className="mt-3 text-xs text-slate-500">{item.tags.map((tag) => `#${tag.name}`).join(' ')}</p>}
                 <div className={`mt-auto flex items-center justify-between gap-3 border-t pt-4 ${isLightMode ? 'border-slate-200' : 'border-slate-800'}`}>
                     <span className="text-sm font-semibold text-orange-500">Baca selengkapnya <span aria-hidden="true">→</span></span>
                     <span className={`rounded border px-2 py-1 text-[10px] font-semibold uppercase tracking-wide ${isLightMode ? 'border-slate-200 text-slate-500' : 'border-slate-700 text-slate-400'}`}>Terverifikasi</span>
@@ -53,7 +56,7 @@ function NewsCard({ item, type, isLightMode }) {
     );
 }
 
-export default function News({ page, berita, artikel, isLightMode, selectedItem, recommendations = [], filters = {} }) {
+export default function News({ page, berita, artikel, isLightMode, selectedItem, recommendations = [], filters = {}, contentCategories = [], contentCategory, contentTags = [] }) {
     const isArticlePage = page === 'artikel';
     const records = isArticlePage ? artikel : berita;
     const items = records?.data ?? [];
@@ -68,6 +71,7 @@ export default function News({ page, berita, artikel, isLightMode, selectedItem,
         search: filters.search ?? '',
         period: filters.period ?? 'all',
         sort: filters.sort ?? 'newest',
+        category: filters.category ?? '',
     });
 
     function search(event) {
@@ -90,7 +94,8 @@ export default function News({ page, berita, artikel, isLightMode, selectedItem,
                         <p className="mt-6 font-mono text-xs tracking-wide text-slate-500">{formatDate(selectedItem.published_at)} <span className="px-1 text-emerald-500">•</span> {isArticlePage ? 'ARTIKEL CSIRT' : 'WARTA CSIRT'}</p>
                         <h1 className={`mt-3 text-3xl font-extrabold leading-tight sm:text-4xl ${isLightMode ? 'text-slate-900' : 'text-slate-100'}`}>{selectedItem.title}</h1>
                         {selectedItem.summary && <p className={`mt-5 border-l-2 border-emerald-500 pl-4 text-lg leading-relaxed ${mutedClass}`}>{selectedItem.summary}</p>}
-                        <div className={`mt-8 border-t pt-7 text-base leading-8 whitespace-pre-line ${isLightMode ? 'border-slate-200 text-slate-700' : 'border-slate-800 text-slate-300'}`}>{selectedItem.content}</div>
+                        {(contentCategory || contentTags.length > 0) && <div className="mt-5 flex flex-wrap items-center gap-2">{contentCategory && <span className="rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-500">{contentCategory.name}</span>}{contentTags.map((tag) => <span className="rounded-full border border-slate-700 px-2.5 py-1 text-xs text-slate-400" key={tag.slug}>#{tag.name}</span>)}</div>}
+                        <ContentBody className={`mt-8 border-t pt-7 text-base leading-8 ${isLightMode ? 'border-slate-200 text-slate-700' : 'border-slate-800 text-slate-300'}`} content={selectedItem.content} />
                     </div>
                 </article>
                     <aside aria-label={`Rekomendasi ${isArticlePage ? 'artikel' : 'berita'}`} className="w-full lg:sticky lg:top-8">
@@ -130,10 +135,16 @@ export default function News({ page, berita, artikel, isLightMode, selectedItem,
                     <Link className={`rounded-lg border px-4 py-2.5 text-sm font-semibold transition ${isArticlePage ? 'border-emerald-500 bg-emerald-600 text-white shadow-lg shadow-emerald-950/20' : isLightMode ? 'border-slate-200 bg-white text-slate-600 hover:border-emerald-300' : 'border-slate-800 bg-[#121b2d] text-slate-400 hover:border-slate-700 hover:text-slate-200'}`} href="/artikel">Artikel Keamanan</Link>
                 </nav>
 
-                <form className={`mb-8 grid gap-3 rounded-2xl border p-4 sm:grid-cols-[minmax(16rem,1fr)_12rem_12rem_auto_auto] sm:items-end ${panelClass}`} onSubmit={search}>
+                <form className={`mb-8 grid gap-3 rounded-2xl border p-4 sm:grid-cols-2 xl:grid-cols-[minmax(16rem,1fr)_12rem_12rem_12rem_auto_auto] xl:items-end ${panelClass}`} onSubmit={search}>
                     <label className="block text-sm font-semibold">
                         <span className={`mb-1.5 block text-xs font-bold uppercase tracking-wide ${mutedClass}`}>Cari {isArticlePage ? 'artikel' : 'berita'}</span>
                         <input className={`w-full rounded-lg border px-3 py-2.5 outline-none focus:border-emerald-500 ${isLightMode ? 'border-slate-300 bg-white text-slate-900' : 'border-slate-700 bg-[#0b1220] text-slate-100'}`} maxLength="100" name="search" onChange={(event) => searchForm.setData('search', event.target.value)} placeholder="Judul atau isi..." value={searchForm.data.search} />
+                    </label>
+                    <label className="block text-sm font-semibold">
+                        <span className={`mb-1.5 block text-xs font-bold uppercase tracking-wide ${mutedClass}`}>Kategori</span>
+                        <select className={`w-full rounded-lg border px-3 py-2.5 outline-none focus:border-emerald-500 ${isLightMode ? 'border-slate-300 bg-white text-slate-900' : 'border-slate-700 bg-[#0b1220] text-slate-100'}`} onChange={(event) => searchForm.setData('category', event.target.value)} value={searchForm.data.category}>
+                            <option value="">Semua kategori</option>{contentCategories.map((category) => <option key={category.id} value={category.slug}>{category.name}</option>)}
+                        </select>
                     </label>
                     <label className="block text-sm font-semibold">
                         <span className={`mb-1.5 block text-xs font-bold uppercase tracking-wide ${mutedClass}`}>Periode</span>
