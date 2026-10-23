@@ -19,7 +19,7 @@ const contactChannels = [
         icon: 'building',
         label: 'Kantor',
         value: 'Nindya Karya, Jakarta',
-        detail: 'Gedung Nindya Karya, Lt. 8, Jl. Letjend M.T. Haryono Kav. 22, Jakarta 13630.',
+        detail: 'Gedung Nindya Karya, Lt. 7, Jl. Letjend M.T. Haryono Kav. 22, Jakarta 13630.',
     },
 ];
 
