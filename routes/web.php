@@ -58,6 +58,7 @@ Route::middleware(['auth', 'active.staff'])->prefix('admin')->name('admin.')->gr
             ->whereNumber('index')
             ->name('reports.evidence');
         Route::patch('/reports/{report}', [AdminReportController::class, 'update'])->name('reports.update');
+        Route::patch('/notifications/{notification}/read', [AdminReportController::class, 'markNotificationRead'])->name('notifications.read');
     });
 });
 

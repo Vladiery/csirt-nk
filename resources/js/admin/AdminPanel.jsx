@@ -4,8 +4,9 @@ import { ReportDetail, ReportList } from './reports/Reports';
 import { ContentManagement } from './content/ContentManagement';
 import { StaffManagement } from './staff/StaffManagement';
 import { RfcDocumentManagement } from './rfc2350/RfcDocumentManagement';
+import { AdminAlerts } from './reports/Reports';
 
-export default function AdminPanel({ adminSection, assignees = [], auth = {}, categories = [], contentCategories = [], contentType, filters = {}, flash = {}, isLightMode, items, report, reports, rfcDocument = {}, staff, stats, statuses = [] }) {
+export default function AdminPanel({ adminNotifications = [], adminUnreadNotificationCount = 0, adminSection, assignees = [], auth = {}, categories = [], contentCategories = [], contentType, filters = {}, flash = {}, isLightMode, items, report, reports, rfcDocument = {}, staff, stats, statuses = [] }) {
     const sectionKey = adminSection === 'content' ? contentType : adminSection;
 
     return (
@@ -15,6 +16,7 @@ export default function AdminPanel({ adminSection, assignees = [], auth = {}, ca
                     <div><p className="text-xs font-bold uppercase tracking-[0.2em] text-orange-400">NK-CSIRT · AREA TERBATAS</p><p className="mt-2 text-sm text-slate-400">Masuk sebagai <span className="font-semibold text-slate-200">{auth.user?.name}</span> · <span className="capitalize">{auth.user?.role}</span></p></div>
                     <AdminNavigation section={sectionKey} />
                 </header>
+                <AdminAlerts count={adminUnreadNotificationCount} notifications={adminNotifications} />
                 {flash.adminStatus && <p className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-300">{flash.adminStatus}</p>}
                 {adminSection === 'dashboard' && <Dashboard stats={stats} />}
                 {adminSection === 'reports' && <ReportList categories={categories} filters={filters} reports={reports} statuses={statuses} />}

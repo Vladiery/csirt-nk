@@ -1,6 +1,40 @@
 import { useState } from 'react';
-import { Link, useForm } from '@inertiajs/react';
+import { Link, router, useForm } from '@inertiajs/react';
 import { buttonClass, inputClass, labelClass } from '../shared';
+
+export function AdminAlerts({ count = 0, notifications = [] }) {
+    if (!notifications.length) return null;
+
+    return <aside aria-label="Notifikasi laporan baru" className="rounded-2xl border border-amber-500/30 bg-amber-500/5 p-4">
+        <div className="mb-3 flex items-center justify-between"><h2 className="font-bold text-amber-200">Laporan baru</h2><span className="rounded-full bg-amber-500/15 px-2 py-1 text-xs font-bold text-amber-200">{count} belum dibaca</span></div>
+        <ul className="space-y-2">{notifications.map((item) => <li className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-[#0b1220] px-3 py-3" key={item.id}>
+            <Link className="min-w-0 flex-1" href={item.report_id ? `/admin/reports/${item.report_id}` : '/admin/reports'}><span className="block truncate text-sm font-semibold text-white">{item.subject}</span><span className="mt-1 block text-xs text-slate-400">{item.category} · {new Date(item.created_at).toLocaleString('id-ID')}</span></Link>
+            <button className="text-xs font-semibold text-sky-300 hover:text-sky-200" onClick={() => router.patch(`/admin/notifications/${item.id}/read`, {}, { preserveScroll: true })} type="button">Tandai dibaca</button>
+        </li>)}</ul>
+    </aside>;
+}
+
+function historyLabel(field) {
+    return ({ status: 'Status', assigned_to_id: 'Petugas', handling_notes: 'Catatan' })[field] ?? field;
+}
+
+function historyValue(field, value) {
+    if (field === 'assigned_to_id') return value || 'Belum ditugaskan';
+    if (field === 'handling_notes') return value ? String(value) : 'Dikosongkan';
+    return value || '—';
+}
+
+function ReportHistory({ history = [] }) {
+    return <section className="rounded-2xl border border-slate-800 bg-[#111a2a] p-5 sm:p-6">
+        <h2 className="text-lg font-bold text-white">Riwayat penanganan</h2>
+        {!history.length ? <p className="mt-3 text-sm text-slate-400">Belum ada riwayat.</p> : <ol className="mt-4 space-y-4 border-l border-slate-700 pl-4">{history.map((event) => <li className="relative" key={event.id}>
+            <span className="absolute -left-[21px] top-1 h-2.5 w-2.5 rounded-full bg-sky-400 ring-4 ring-[#111a2a]" />
+            <p className="text-sm font-semibold text-slate-200">{event.event === 'received' ? 'Laporan diterima' : 'Penanganan diperbarui'}</p>
+            <p className="mt-1 text-xs text-slate-500">{event.actor} · {new Date(event.created_at).toLocaleString('id-ID')}</p>
+            {Object.entries(event.changes ?? {}).map(([field, values]) => <div className="mt-2 text-xs text-slate-400" key={field}><span className="font-semibold text-slate-300">{historyLabel(field)}:</span> {historyValue(field, values.old)} → {historyValue(field, values.new)}</div>)}
+        </li>)}</ol>}
+    </section>;
+}
 
 export function ReportList({ reports = {}, categories = [], statuses = [], filters = {} }) {
     const form = useForm({
@@ -82,12 +116,12 @@ export function ReportDetail({ report, statuses = [], assignees = [] }) {
     }
 
     return (
-        <section className="grid gap-6 xl:grid-cols-2">
-            <div className="flex flex-col gap-5">
-                <div>
+        <section className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.35fr)_minmax(13rem,0.7fr)] 2xl:gap-6">
+            <div className="contents">
+                <div className="col-span-full min-w-0">
                     <Link className="text-sm font-semibold text-sky-400 hover:text-sky-300" href="/admin/reports">← Kembali ke laporan</Link>
-                    <h1 className="mt-4 text-2xl font-extrabold text-white sm:text-3xl">{report.subject}</h1>
-                    <div className="mt-4 flex flex-wrap items-center gap-3"><span className="text-xs font-bold uppercase tracking-wide text-slate-500">Kode pelacakan</span><code className="rounded-lg border border-slate-800 bg-[#111a2a] px-3 py-2 text-sm text-sky-300">{report.tracking_code}</code><button className="rounded-lg border border-slate-700 px-3 py-2 text-xs font-semibold text-slate-300 hover:bg-slate-800" onClick={copyTrackingCode} type="button">{copied ? 'Tersalin' : 'Salin kode'}</button></div>
+                    <h1 className="mt-4 break-words text-2xl font-extrabold text-white sm:text-3xl">{report.subject}</h1>
+                    <div className="mt-4 flex flex-wrap items-center gap-3 md:justify-start"><span className="text-xs font-bold uppercase tracking-wide text-slate-500">Kode pelacakan</span><code className="rounded-lg border border-slate-800 bg-[#111a2a] px-3 py-2 text-sm text-sky-300">{report.tracking_code}</code><button className="rounded-lg border border-slate-700 px-3 py-2 text-xs font-semibold text-slate-300 hover:bg-slate-800" onClick={copyTrackingCode} type="button">{copied ? 'Tersalin' : 'Salin kode'}</button></div>
                     <p className="mt-2 text-sm text-slate-400">{report.category} · {new Date(report.created_at).toLocaleString('id-ID')}</p>
                 </div>
                 <div className="flex-1 rounded-2xl border border-slate-800 bg-[#111a2a] p-5 sm:p-6">
@@ -106,9 +140,10 @@ export function ReportDetail({ report, statuses = [], assignees = [] }) {
                 <div><h2 className="text-lg font-bold text-white">Penanganan</h2><p className="mt-1 text-sm text-slate-400">Atur status, petugas penanggung jawab, dan catatan tindak lanjut.</p></div>
                 <label className="block text-sm font-medium text-slate-200"><span className={labelClass}>Status</span><select className={inputClass} onChange={(event) => setData('status', event.target.value)} value={data.status}>{statuses.map((status) => <option key={status} value={status}>{status}</option>)}</select>{errors.status && <span className="mt-1 block text-xs text-rose-400">{errors.status}</span>}</label>
                 <label className="block text-sm font-medium text-slate-200"><span className={labelClass}>Petugas penanggung jawab</span><select className={inputClass} onChange={(event) => setData('assigned_to_id', event.target.value)} value={data.assigned_to_id}><option value="">Belum ditugaskan</option>{assignees.map((person) => <option key={person.id} value={person.id}>{person.name} ({person.role})</option>)}</select>{errors.assigned_to_id && <span className="mt-1 block text-xs text-rose-400">{errors.assigned_to_id}</span>}{report.assigned_to_name && <span className="mt-1 block text-xs text-slate-500">Saat ini: {report.assigned_to_name}</span>}</label>
-                <label className="block text-sm font-medium text-slate-200"><span className={labelClass}>Catatan penanganan</span><textarea className={`${inputClass} min-h-56 resize-y`} onChange={(event) => setData('handling_notes', event.target.value)} placeholder="Catat hasil pemeriksaan, tindakan, komunikasi, dan langkah berikutnya..." value={data.handling_notes} />{errors.handling_notes && <span className="mt-1 block text-xs text-rose-400">{errors.handling_notes}</span>}<span className="mt-1 block text-xs text-slate-500">Catatan ini hanya terlihat di panel petugas.</span></label>
+                <label className="block text-sm font-medium text-slate-200"><span className={labelClass}>Catatan penanganan</span><textarea className={`${inputClass} min-h-40 resize-y`} onChange={(event) => setData('handling_notes', event.target.value)} placeholder="Catat hasil pemeriksaan, tindakan, komunikasi, dan langkah berikutnya..." value={data.handling_notes} />{errors.handling_notes && <span className="mt-1 block text-xs text-rose-400">{errors.handling_notes}</span>}<span className="mt-1 block text-xs text-slate-500">Catatan ini hanya terlihat di panel petugas.</span></label>
                 <button className={`${buttonClass} w-full`} disabled={processing} type="submit">{processing ? 'Menyimpan...' : 'Simpan penanganan'}</button>
             </form>
+            <ReportHistory history={report.history} />
         </section>
     );
 }

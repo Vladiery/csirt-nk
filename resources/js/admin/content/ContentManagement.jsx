@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, router, useForm } from '@inertiajs/react';
 import ContentBody from '../../shared/ContentBody';
-import { buttonClass, Field, inputClass, labelClass, toDateTimeLocal } from '../shared';
+import { buttonClass, ConfirmDialog, Field, inputClass, labelClass, toDateTimeLocal } from '../shared';
 
 export function ContentForm({ type, initial, onCancel, onSaved, contentCategories = [] }) {
     const editorRef = useRef(null);
@@ -100,6 +100,8 @@ export function ContentManagement({ type, items = {}, filters = {}, contentCateg
     const [history, setHistory] = useState([]);
     const [historyLoading, setHistoryLoading] = useState(false);
     const [historyError, setHistoryError] = useState('');
+    const [deletingItem, setDeletingItem] = useState(null);
+    const [deleteProcessing, setDeleteProcessing] = useState(false);
     const searchForm = useForm({
         search: filters.search ?? '',
         status: filters.status ?? '',
@@ -142,6 +144,16 @@ export function ContentManagement({ type, items = {}, filters = {}, contentCateg
         router.post(`/admin/content/${type}/${historyItem.id}/revisions/${revisionId}/restore`, {}, {
             preserveScroll: true,
             onSuccess: () => setHistoryItem(null),
+        });
+    }
+
+    function deleteContent() {
+        if (!deletingItem) return;
+        setDeleteProcessing(true);
+        router.delete(`/admin/content/${type}/${deletingItem.id}`, {
+            preserveScroll: true,
+            onSuccess: () => setDeletingItem(null),
+            onFinish: () => setDeleteProcessing(false),
         });
     }
 
@@ -201,16 +213,13 @@ export function ContentManagement({ type, items = {}, filters = {}, contentCateg
                             <div className="mt-auto flex gap-2 border-t border-slate-800 pt-4">
                                 <button className="flex-1 rounded-lg border border-slate-700 px-3 py-2 text-sm font-semibold text-slate-200 transition hover:bg-slate-800" onClick={() => { setEditing(item); setIsModalOpen(true); }} type="button">Ubah</button>
                                 <button className="rounded-lg border border-slate-700 px-3 py-2 text-sm font-semibold text-slate-300 transition hover:bg-slate-800" onClick={() => openHistory(item)} type="button">Riwayat</button>
-                                <button className="flex-1 rounded-lg border border-rose-500/30 px-3 py-2 text-sm font-semibold text-rose-300 transition hover:bg-rose-500/10" onClick={() => {
-                                    if (window.confirm(`Hapus ${singularTitle} “${item.title}”? Tindakan ini tidak dapat dibatalkan.`)) {
-                                        router.delete(`/admin/content/${type}/${item.id}`);
-                                    }
-                                }} type="button">Hapus</button>
+                                <button className="flex-1 rounded-lg border border-rose-500/30 px-3 py-2 text-sm font-semibold text-rose-300 transition hover:bg-rose-500/10" onClick={() => setDeletingItem(item)} type="button">Hapus</button>
                             </div>
                         </div>
                     </article>
                 )) : <p className="rounded-2xl border border-slate-800 bg-[#111a2a] p-5 text-sm text-slate-400 sm:col-span-2 xl:col-span-3">Tidak ada {singularTitle} yang cocok dengan pencarian atau filter ini.</p>}
             </div>
+            <ConfirmDialog description={deletingItem ? `Konten “${deletingItem.title}” akan dihapus permanen dan tidak dapat dipulihkan.` : ''} onCancel={() => { if (!deleteProcessing) setDeletingItem(null); }} onConfirm={deleteContent} open={Boolean(deletingItem)} processing={deleteProcessing} title={`Yakin ingin menghapus ${singularTitle} ini?`} />
             {items.links?.length > 3 && <div className="flex flex-wrap gap-2">{items.links.map((link, index) => <Link aria-current={link.active ? 'page' : undefined} className={`rounded-lg border px-3 py-2 text-sm ${link.active ? 'border-sky-500 bg-sky-600 text-white' : 'border-slate-700 text-slate-300'} ${!link.url ? 'pointer-events-none opacity-40' : ''}`} href={link.url || '#'} key={index} preserveScroll>{link.label.replace(/<[^>]*>/g, '')}</Link>)}</div>}
             {isModalOpen && <div className="fixed inset-0 z-[100] grid place-items-center overflow-y-auto bg-slate-950/75 p-4 backdrop-blur-sm" onClick={(event) => { if (event.target === event.currentTarget) closeModal(); }}>
                 <div aria-labelledby="content-form-title" aria-modal="true" className="my-auto w-full max-w-3xl" role="dialog">
@@ -221,4 +230,3 @@ export function ContentManagement({ type, items = {}, filters = {}, contentCateg
         </section>
     );
 }
-

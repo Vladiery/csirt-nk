@@ -5,9 +5,14 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreReportRequest;
 use App\Mail\IncidentReportMail;
 use App\Models\Report;
+use App\Models\ReportHandlingEvent;
+use App\Models\User;
+use App\Notifications\NewIncidentReportNotification;
+use App\UserRole;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
@@ -60,7 +65,14 @@ class ReportController extends Controller
                     ];
                 })
                 ->all();
-            $report->save();
+            DB::transaction(function () use ($report): void {
+                $report->save();
+                ReportHandlingEvent::query()->create([
+                    'report_id' => $report->id,
+                    'event' => 'received',
+                    'changes' => ['status' => ['old' => null, 'new' => 'received']],
+                ]);
+            });
         } catch (Throwable $exception) {
             if ($storedPaths !== []) {
                 Storage::disk('local')->delete($storedPaths);
@@ -71,6 +83,13 @@ class ReportController extends Controller
 
         try {
             Mail::to(config('mail.report_address'))->send(new IncidentReportMail($report));
+        } catch (Throwable $exception) {
+            report($exception);
+        }
+
+        try {
+            User::query()->where('role', UserRole::Admin)->where('is_active', true)
+                ->each(fn (User $admin) => $admin->notify(new NewIncidentReportNotification($report)));
         } catch (Throwable $exception) {
             report($exception);
         }

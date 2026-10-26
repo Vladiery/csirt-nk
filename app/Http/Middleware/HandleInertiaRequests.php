@@ -38,6 +38,18 @@ class HandleInertiaRequests extends Middleware
     {
         return [
             ...parent::share($request),
+            'adminNotifications' => fn (): array => $request->user() !== null && $request->is('admin*')
+                ? $request->user()->unreadNotifications()->latest()->limit(5)->get()->map(fn ($notification): array => [
+                    'id' => $notification->id,
+                    'report_id' => $notification->data['report_id'] ?? null,
+                    'subject' => $notification->data['subject'] ?? 'Laporan baru',
+                    'category' => $notification->data['category'] ?? '',
+                    'created_at' => $notification->created_at?->toISOString(),
+                ])->all()
+                : [],
+            'adminUnreadNotificationCount' => fn (): int => $request->user() !== null && $request->is('admin*')
+                ? $request->user()->unreadNotifications()->count()
+                : 0,
             'auth' => [
                 'user' => fn (): ?array => $request->user() === null ? null : [
                     'id' => $request->user()->id,

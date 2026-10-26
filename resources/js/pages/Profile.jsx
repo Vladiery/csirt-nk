@@ -10,18 +10,12 @@ export default function Profile({ Icon }) {
         'Meningkatkan kesadaran keamanan siber di PT Nindya Karya.',
         'Memberikan bantuan teknis pada konstituen.',
     ];
-    const teams = [
-        { icon: 'alert', title: 'Triase & Tanggap Insiden', detail: 'Penanganan pertama, containment malware, dan restorasi darurat.' },
-        { icon: 'eye', title: 'Forensik Digital', detail: 'Analisis bukti jejak digital, root cause, dan audit forensik.' },
-        { icon: 'shield', title: 'Intelijen & Kepatuhan', detail: 'Threat intelligence, audit berkala, dan edukasi keamanan.' },
-    ];
-
     return (
         <>
             <section className="border-b border-slate-800/80 px-4 py-10 sm:px-6 sm:py-14 lg:px-8 lg:py-16">
                 <div className="mx-auto w-full">
                     <h1 className="mt-4 text-4xl font-extrabold tracking-tight text-white sm:text-5xl">Profil Tim <span className="text-orange-500">(NK-CSIRT)</span></h1>
-                    <p className="mt-4 max-w-3xl text-lg leading-relaxed text-slate-400 sm:text-lg">Mengenal mandat, visi misi, serta struktur operasional kesiapsiagaan siber PT Nindya Karya (Persero) di bawah koordinasi Badan Siber dan Sandi Negara (BSSN).</p>
+                    <p className="mt-4 max-w-3xl text-lg leading-relaxed text-slate-400 sm:text-lg">Mengenal mandat, visi, dan misi kesiapsiagaan siber PT Nindya Karya (Persero) di bawah koordinasi Badan Siber dan Sandi Negara (BSSN).</p>
                 </div>
             </section>
 
@@ -90,38 +84,6 @@ export default function Profile({ Icon }) {
                 </div>
             </section>
 
-            <section className="px-4 py-14 sm:px-6 sm:py-20 lg:px-8 lg:py-20">
-                <div className="mx-auto w-full">
-                    <div className="mx-auto max-w-2xl text-center">
-                        <span className="text-base font-bold tracking-[0.15em] text-orange-400">STRUKTUR OPERASIONAL</span>
-                        <h2 className="mt-2 text-3xl font-bold tracking-tight text-white sm:text-4xl">Hierarki & Otoritas Tim</h2>
-                        <p className="mt-3 text-lg text-slate-400">Tata kelola operasional dengan garis komando terstruktur untuk pengambilan keputusan mitigasi cepat.</p>
-                    </div>
-                    <div className="mx-auto mt-9 max-w-4xl">
-                        <div className="mx-auto max-w-md rounded-2xl border border-sky-500/30 bg-sky-500/[0.08] p-5 text-center">
-                            <span className="rounded-full border border-sky-500/30 bg-sky-500/10 px-3 py-1 text-base font-bold tracking-[0.14em] text-sky-400">TINGKAT PENGARAH</span>
-                            <h3 className="mt-3 text-lg font-bold text-slate-100">Sponsor Eksekutif CSIRT</h3>
-                            <p className="mt-1 text-base text-slate-400">Direksi & Manajemen Puncak PT Nindya Karya (Persero)</p>
-                        </div>
-                        <div className="mx-auto h-5 w-px bg-sky-500/60" />
-                        <div className="mx-auto max-w-md rounded-2xl border border-orange-500/30 bg-orange-500/[0.08] p-5 text-center">
-                            <span className="rounded-full border border-orange-500/30 bg-orange-500/10 px-3 py-1 text-base font-bold tracking-[0.14em] text-orange-400">TINGKAT MANAJERIAL</span>
-                            <h3 className="mt-3 text-lg font-bold text-slate-100">Ketua Tim (CSIRT Lead / CISO)</h3>
-                            <p className="mt-1 text-base text-slate-400">Vice President Divisi Teknologi Informasi</p>
-                        </div>
-                        <div className="mx-auto hidden h-5 w-1/2 border-x border-t border-slate-700 sm:block" />
-                        <div className="mt-4 grid gap-3 sm:grid-cols-3 sm:gap-4">
-                            {teams.map((team) => (
-                                <article className="rounded-xl border border-slate-800 bg-[#121b2d] p-5 text-center" key={team.title}>
-                                    <span className="mx-auto grid h-10 w-10 place-items-center rounded-lg border border-orange-500/25 bg-orange-500/10 text-orange-400"><Icon className="h-5 w-5" name={team.icon} /></span>
-                                    <h3 className="mt-4 text-lg font-bold text-slate-100">{team.title}</h3>
-                                    <p className="mt-2 text-lg leading-relaxed text-slate-400">{team.detail}</p>
-                                </article>
-                            ))}
-                        </div>
-                    </div>
-                </div>
-            </section>
         </>
     );
 }

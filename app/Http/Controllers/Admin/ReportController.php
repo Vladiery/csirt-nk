@@ -4,10 +4,12 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Report;
+use App\Models\ReportHandlingEvent;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Illuminate\Validation\Rule;
@@ -105,6 +107,18 @@ class ReportController extends Controller
                         'url' => "/admin/reports/{$report->id}/evidence/{$index}",
                     ];
                 }),
+                'history' => ReportHandlingEvent::query()
+                    ->with('actor:id,name')
+                    ->where('report_id', $report->id)
+                    ->oldest()
+                    ->get()
+                    ->map(fn (ReportHandlingEvent $event): array => [
+                        'id' => $event->id,
+                        'event' => $event->event,
+                        'changes' => $event->changes ?? [],
+                        'actor' => $event->actor?->name ?? 'Sistem',
+                        'created_at' => $event->created_at?->toISOString(),
+                    ]),
             ],
             'statuses' => self::STATUSES,
             'assignees' => User::query()->where('is_active', true)->orderBy('name')->get(['id', 'name', 'role']),
@@ -121,7 +135,29 @@ class ReportController extends Controller
             'assigned_to_id' => ['nullable', Rule::exists('users', 'id')->where('is_active', true)],
         ]);
 
-        $report->fill($validated)->save();
+        $changes = [];
+        foreach ($validated as $field => $value) {
+            $oldValue = $report->getAttribute($field);
+            if ((string) ($oldValue ?? '') !== (string) ($value ?? '')) {
+                if ($field === 'assigned_to_id') {
+                    $oldValue = $oldValue ? User::query()->whereKey($oldValue)->value('name') : null;
+                    $value = $value ? User::query()->whereKey($value)->value('name') : null;
+                }
+                $changes[$field] = ['old' => $oldValue, 'new' => $value];
+            }
+        }
+
+        if ($changes !== []) {
+            DB::transaction(function () use ($report, $validated, $request, $changes): void {
+                $report->fill($validated)->save();
+                ReportHandlingEvent::query()->create([
+                    'report_id' => $report->id,
+                    'actor_id' => $request->user()->id,
+                    'event' => 'updated',
+                    'changes' => $changes,
+                ]);
+            });
+        }
 
         return back()->with('adminStatus', 'Penanganan laporan berhasil diperbarui.');
     }
@@ -148,5 +184,13 @@ class ReportController extends Controller
             'X-Content-Type-Options' => 'nosniff',
             'Cache-Control' => 'private, no-store',
         ]);
+    }
+
+    public function markNotificationRead(Request $request, string $notification): RedirectResponse
+    {
+        $item = $request->user()->notifications()->whereKey($notification)->firstOrFail();
+        $item->markAsRead();
+
+        return back();
     }
 }

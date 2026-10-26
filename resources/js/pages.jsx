@@ -6,6 +6,7 @@ import Rfc2350 from './pages/Rfc2350';
 import Services from './pages/Services';
 import News from './pages/News';
 import Contact from './pages/Contact';
+import Reveal from './shared/Reveal';
 
 const StaffLogin = lazy(() => import('./auth/StaffLogin'));
 const AdminPanel = lazy(() => import('./admin/AdminPanel'));
@@ -483,7 +484,11 @@ export default function Welcome({ highlights = [], berita, artikel, selectedItem
 
                         {highlights.length > 0 ? (
                             <div className="mt-8 grid gap-4 lg:grid-cols-3">
-                                {highlights.map((highlight) => <HighlightCard highlight={highlight} key={`${highlight.type}-${highlight.title}`} />)}
+                                {highlights.map((highlight, index) => (
+                                    <Reveal delay={index * 120} key={`${highlight.type}-${highlight.title}`}>
+                                        <HighlightCard highlight={highlight} />
+                                    </Reveal>
+                                ))}
                             </div>
                         ) : (
                             <div className="mt-8 rounded-xl border border-slate-800 bg-[#121b2d] px-6 py-12 text-center">
